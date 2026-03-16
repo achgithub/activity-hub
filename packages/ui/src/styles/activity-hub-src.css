@@ -1,0 +1,366 @@
+/* ============================================================
+   ACTIVITY HUB — Shared Platform CSS (Tailwind source)
+
+   BUILD:  cd packages/ui && npm run build:css
+   OUTPUT: packages/ui/src/styles/activity-hub.css
+
+   This file uses Tailwind directives and @apply rules to
+   generate the final activity-hub.css. The compiled version
+   is the single source of truth for all mini-apps.
+
+   For future enhancements:
+   1. Edit this file and add Tailwind utilities with @apply
+   2. Run: npm run build:css
+   3. Commit the updated activity-hub.css
+   ============================================================ */
+
+@tailwind base;
+@tailwind components;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    @apply font-sans antialiased m-0;
+    background-color: #FAFAFA;
+    color: #1C1917;
+  }
+
+  h1, h2, h3, h4 { color: #1C1917; }
+
+  button       { @apply font-sans cursor-pointer; }
+  button:disabled { @apply opacity-60 cursor-not-allowed; }
+
+  input, textarea, select { @apply font-sans; }
+
+  input:focus, textarea:focus, select:focus {
+    @apply outline-none border-brand-500 ring-2 ring-brand-500/20;
+  }
+}
+
+@layer components {
+
+  /* ── Layout ─────────────────────────────────────────────── */
+  .ah-container {
+    @apply max-w-4xl mx-auto px-4 text-stone-900;
+  }
+  .ah-container--wide   { @apply max-w-6xl; }
+  .ah-container--narrow { @apply max-w-xl; }
+
+  /* ── Flexbox Utilities ───────────────────────────────────── */
+  .ah-flex {
+    @apply flex;
+  }
+
+  .ah-flex-center {
+    @apply flex items-center;
+  }
+
+  .ah-flex-center-justify {
+    @apply flex items-center justify-center;
+  }
+
+  .ah-flex-between {
+    @apply flex items-center justify-between;
+  }
+
+  .ah-flex-wrap {
+    @apply flex flex-wrap;
+  }
+
+  .ah-flex-col {
+    @apply flex flex-col;
+  }
+
+  .ah-flex-col-center {
+    @apply flex flex-col items-center;
+  }
+
+  .ah-flex-col-center-justify {
+    @apply flex flex-col items-center justify-center;
+  }
+
+  /* ── Card ────────────────────────────────────────────────── */
+  .ah-card {
+    @apply bg-white p-4 mb-3;
+    border: 1px solid #F0F0F0;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  /* ── Banners ─────────────────────────────────────────────── */
+  .ah-banner {
+    @apply px-4 py-2.5 mb-3 text-sm;
+    border-radius: 6px;
+  }
+  .ah-banner--error   { @apply bg-red-50   border border-red-200   text-red-800   cursor-pointer; }
+  .ah-banner--success { @apply bg-green-50 border border-green-200 text-green-800; }
+  .ah-banner--warning { @apply bg-amber-50 border border-amber-200 text-amber-800; }
+  .ah-banner--info    { @apply bg-brand-50 border border-brand-100 text-brand-800; }
+
+  /* ── Typography ──────────────────────────────────────────── */
+  .ah-section-title {
+    @apply text-xs font-semibold mb-3 uppercase tracking-wider;
+    color: #78716C;
+  }
+  .ah-meta  { @apply text-sm my-1; color: #78716C; }
+  .ah-label { @apply text-sm mr-1; color: #78716C; }
+
+  /* ── Tabs ────────────────────────────────────────────────── */
+  .ah-tabs {
+    @apply flex mb-5 border-b;
+    border-color: #F0F0F0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .ah-tab {
+    @apply px-5 py-2.5 border-0 bg-transparent cursor-pointer text-sm font-medium
+           border-b-2 border-transparent -mb-px
+           transition-colors duration-150;
+    color: #78716C;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .ah-tab:hover { color: #1C1917; }
+  .ah-tab.active {
+    @apply border-b-2 border-brand-500;
+    color: #1976D2;
+  }
+
+  /* ── Buttons ─────────────────────────────────────────────── */
+  .ah-btn-primary {
+    @apply inline-flex items-center justify-center
+           px-5 py-2.5 border-0
+           bg-brand-500 text-white text-sm font-semibold
+           cursor-pointer whitespace-nowrap
+           transition-all duration-150
+           hover:bg-brand-600 hover:-translate-y-px
+           active:translate-y-0
+           focus-visible:outline focus-visible:outline-2
+           focus-visible:outline-offset-2 focus-visible:outline-brand-500;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px 0 rgba(33,150,243,0.3);
+  }
+  .ah-btn-primary:hover:not(:disabled) {
+    box-shadow: 0 4px 12px 0 rgba(33,150,243,0.35);
+  }
+  .ah-btn-primary:disabled {
+    @apply opacity-50 cursor-not-allowed translate-y-0;
+    box-shadow: none;
+  }
+
+  .ah-btn-outline {
+    @apply inline-flex items-center justify-center
+           px-4 py-2
+           bg-white text-brand-700 text-sm font-medium
+           cursor-pointer whitespace-nowrap
+           transition-colors duration-150
+           focus-visible:outline focus-visible:outline-2
+           focus-visible:outline-offset-2 focus-visible:outline-brand-500;
+    border: 1px solid #90CAF9;
+    border-radius: 6px;
+  }
+  .ah-btn-outline:hover:not(:disabled) {
+    background-color: #E3F2FD;
+    border-color: #42A5F5;
+  }
+  .ah-btn-outline:disabled { @apply opacity-50 cursor-not-allowed; }
+
+  .ah-btn-danger {
+    @apply inline-flex items-center justify-center
+           px-4 py-2
+           bg-white text-red-600 text-sm font-medium
+           cursor-pointer whitespace-nowrap
+           transition-colors duration-150
+           focus-visible:outline focus-visible:outline-2
+           focus-visible:outline-offset-2 focus-visible:outline-red-500;
+    border: 1px solid #FCA5A5;
+    border-radius: 6px;
+  }
+  .ah-btn-danger:hover:not(:disabled) {
+    background-color: #FEF2F2;
+    border-color: #F87171;
+  }
+  .ah-btn-danger:disabled { @apply opacity-50 cursor-not-allowed; }
+
+  .ah-btn-back {
+    @apply inline-flex items-center justify-center
+           px-3 py-1.5
+           bg-white text-sm
+           cursor-pointer whitespace-nowrap
+           transition-colors duration-150;
+    border: 1px solid #D6D3D1;
+    border-radius: 6px;
+    color: #78716C;
+  }
+  .ah-btn-back:hover { background-color: #F5F5F4; color: #44403C; }
+
+  /* ── App Header Bar ──────────────────────────────────────── */
+  .ah-app-header {
+    @apply w-full bg-white border-b px-4 py-3 flex items-center justify-between;
+    border-color: #F0F0F0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .ah-app-header-left {
+    @apply flex items-center gap-3;
+  }
+
+  .ah-app-header-right {
+    @apply flex items-center gap-2;
+  }
+
+  .ah-app-title {
+    @apply text-xl font-bold m-0;
+    color: #1C1917;
+  }
+
+  /* ── Form elements ───────────────────────────────────────── */
+  .ah-input {
+    @apply px-3 py-2 text-sm font-sans
+           transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500;
+    border: 1px solid #D6D3D1;
+    border-radius: 6px;
+    color: #1C1917;
+    background: white;
+  }
+  .ah-input:hover:not(:disabled) { border-color: #A8A29E; }
+  .ah-input::placeholder { color: #A8A29E; }
+
+  .ah-select {
+    @apply px-3 py-2 text-sm font-sans bg-white cursor-pointer
+           transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500;
+    border: 1px solid #D6D3D1;
+    border-radius: 6px;
+    color: #1C1917;
+  }
+  .ah-select:hover { border-color: #A8A29E; }
+
+  .ah-select-fixed {
+    @apply ah-select;
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+  }
+
+  /* ── Game Boards ─────────────────────────────────────────── */
+  .ah-game-board {
+    @apply grid gap-1 bg-stone-200 p-2;
+    border-radius: 6px;
+  }
+
+  .ah-game-cell {
+    @apply aspect-square bg-white rounded flex items-center justify-center
+           cursor-pointer hover:bg-stone-50 transition-colors duration-150;
+  }
+
+  .ah-game-cell.disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .ah-game-cell.active {
+    @apply ring-2 ring-brand-500;
+  }
+
+  /* Grid size variants */
+  .ah-game-board--3x3 { grid-template-columns: repeat(3, 1fr); }
+  .ah-game-board--4x4 { grid-template-columns: repeat(4, 1fr); }
+  .ah-game-board--5x5 { grid-template-columns: repeat(5, 1fr); }
+  .ah-game-board--6x6 { grid-template-columns: repeat(6, 1fr); }
+
+  .ah-game-board--dots {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+
+  /* ── Loading & Animations ────────────────────────────────── */
+  .ah-spinner {
+    @apply inline-block w-5 h-5 rounded-full
+           border-2 border-stone-300 border-t-brand-500
+           animate-spin;
+  }
+
+  .ah-spinner--large {
+    @apply w-10 h-10 border-4;
+  }
+
+  .ah-spinner--small {
+    @apply w-3 h-3 border;
+  }
+
+  /* Modals & Dialogs */
+  .ah-modal-overlay {
+    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50
+           backdrop-blur-sm;
+  }
+
+  .ah-modal {
+    @apply bg-white shadow-2xl p-6 max-w-md w-full mx-4
+           transform transition-all;
+    border-radius: 8px;
+  }
+
+  .ah-modal--large {
+    @apply max-w-2xl;
+  }
+
+  .ah-modal--small {
+    @apply max-w-sm;
+  }
+
+  .ah-modal-header {
+    @apply flex justify-between items-center mb-4;
+  }
+
+  .ah-modal-title {
+    @apply text-lg font-bold text-stone-900 m-0;
+  }
+
+  .ah-modal-body {
+    @apply text-stone-700 text-sm leading-relaxed;
+  }
+
+  .ah-modal-footer {
+    @apply flex gap-3 mt-6 justify-end;
+  }
+
+  /* ── Status Indicators ───────────────────────────────────── */
+  .ah-status {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full
+           text-sm font-medium;
+  }
+
+  .ah-status--active {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .ah-status--waiting {
+    @apply bg-amber-100 text-amber-700;
+  }
+
+  .ah-status--disabled {
+    @apply bg-stone-100 text-stone-500;
+  }
+
+  .ah-status--eliminated {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .ah-status--complete {
+    @apply bg-blue-100 text-blue-700;
+  }
+
+  .ah-status--in-progress {
+    @apply bg-brand-100 text-brand-700;
+  }
+
+  /* ── More utility classes can be added here as needed ───── */
+  /* See activity-hub.css for the complete compiled version */
+
+}
+
+@tailwind utilities;
