@@ -33,51 +33,41 @@ const ChallengeProgress: React.FC<ChallengeProgressProps> = ({
       <div className="ah-flex-between mb-3">
         <h4 className="text-sm font-semibold">{appName} Challenge</h4>
         <div className={isReady ? 'ah-status--complete' : 'ah-status--waiting'}>
-          {isReady ? '✓ Ready to Start' : '⏳ Waiting'}
+          {isReady ? '✓ Ready' : '⏳ Waiting'}
         </div>
       </div>
 
-      <style>{`
-        .challenge-progress-bar-${challenge.id} { width: ${progressPercent}%; }
-      `}</style>
-
-      <div className="bg-stone-200 rounded h-2 mb-3 overflow-hidden">
-        <div
-          className={`challenge-progress-bar-${challenge.id} h-full ${isReady ? 'bg-green-600' : 'bg-blue-500'} transition-all duration-300`}
-        />
-      </div>
-
-      <div className="ah-flex-between mb-3 text-sm">
-        <span className="ah-label">Accepted:</span>
+      <div className="ah-flex-center justify-between mb-3 text-sm">
+        <span className="ah-label">Players Accepted:</span>
         <span className="font-medium">
           {acceptedCount} / {minRequired}
         </span>
-        <span className="ah-meta">
+        <span className="ah-meta text-xs">
           ({totalInvited} invited)
         </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2 mb-4">
         {challenge.playerIds?.map(playerId => {
           const hasAccepted = challenge.accepted?.includes(playerId);
           const isInitiator = playerId === challenge.initiatorId;
 
           return (
             <div key={playerId} className="ah-flex-center gap-2 py-1">
-              <span className={hasAccepted ? 'text-green-600' : 'text-stone-400'}>
+              <span className={hasAccepted ? 'text-green-600 text-lg' : 'text-stone-400 text-lg'}>
                 {hasAccepted ? '✓' : '○'}
               </span>
-              <span className="text-sm">
+              <span className="text-sm flex-1">
                 {getUserName(playerId)}
-                {isInitiator && <em className="text-stone-500"> (host)</em>}
               </span>
+              {isInitiator && <span className="ah-meta text-xs">(host)</span>}
             </div>
           );
         })}
       </div>
 
       {isReady && (
-        <div className="ah-banner--success mt-4 text-center">
+        <div className="ah-banner--success text-center text-sm">
           Game will start automatically...
         </div>
       )}
