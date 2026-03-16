@@ -8,4 +8,8 @@
  * See CSS_GUIDE.md for complete class reference
  */
 
-// Component exports will be added as components are migrated
+// Awareness Service Components
+export { default as PresenceBadge } from './components/awareness/PresenceBadge';
+export { default as OnlineUsersList } from './components/awareness/OnlineUsersList';
+export { default as SessionParticipants } from './components/awareness/SessionParticipants';
+export { default as StatusSelector } from './components/awareness/StatusSelector';
