@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { User } from '@activity-hub/core';
+import { useAwareness } from '@activity-hub/sdk';
 import { useLobby } from '../hooks/useLobby';
 import { useApps, buildAppUrl } from '../hooks/useApps';
 import Lobby from './Lobby';
@@ -23,6 +24,9 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
 
   // Debug: Log user info
   console.log('🔍 Shell received user:', user);
+
+  // Initialize awareness (presence tracking)
+  const { status, setStatus, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
 
   // Fetch apps from registry
   const { apps, loading: appsLoading, refreshApps } = useApps();
@@ -101,6 +105,16 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
             </>
           )}
           <div className="ah-flex ah-flex-center gap-2">
+            {awarenessInitialized && !user.is_guest && (
+              <div className="ah-flex-center gap-1 px-2 py-1 text-sm">
+                {status === 'online' && <span>🟢</span>}
+                {status === 'in_game' && <span>🎮</span>}
+                {status === 'away' && <span>🟡</span>}
+                {status === 'offline' && <span>⚪</span>}
+                {status === 'do_not_disturb' && <span>🔴</span>}
+                <span className="text-xs text-gray-600 capitalize">{status}</span>
+              </div>
+            )}
             <button
               className="ah-btn-outline ah-btn-sm"
               onClick={() => navigate('/profile')}
