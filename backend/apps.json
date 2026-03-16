@@ -1,0 +1,131 @@
+{
+  "apps": [
+    {
+      "id": "lobby",
+      "name": "Lobby",
+      "icon": "🏠",
+      "type": "internal",
+      "description": "View online users and challenges",
+      "category": "utility"
+    },
+    {
+      "id": "tic-tac-toe",
+      "name": "Tic-Tac-Toe",
+      "icon": "⭕",
+      "type": "iframe",
+      "description": "Classic grid game - first to 3 wins!",
+      "category": "game",
+      "url": "http://{host}:4001",
+      "backendPort": 4001,
+      "realtime": "sse"
+    },
+    {
+      "id": "dots",
+      "name": "Dots & Boxes",
+      "icon": "🔵",
+      "type": "iframe",
+      "description": "Connect the dots, complete the boxes!",
+      "category": "game",
+      "url": "http://{host}:4011",
+      "backendPort": 4011,
+      "realtime": "sse"
+    },
+    {
+      "id": "spoof",
+      "name": "Spoof",
+      "icon": "🪙",
+      "type": "iframe",
+      "description": "Guess the total coins - 3-6 player coin game",
+      "category": "game",
+      "url": "http://{host}:4051",
+      "backendPort": 4051,
+      "realtime": "sse",
+      "minPlayers": 3,
+      "maxPlayers": 6
+    },
+    {
+      "id": "smoke-test",
+      "name": "Smoke Test",
+      "icon": "🧪",
+      "type": "iframe",
+      "description": "Template validation and smoke testing",
+      "category": "utility",
+      "url": "http://{host}:5010",
+      "backendPort": 5010
+    },
+    {
+      "id": "sweepstakes",
+      "name": "Sweepstakes",
+      "icon": "🎁",
+      "type": "iframe",
+      "description": "Draw competitions and blind box selections",
+      "category": "game",
+      "url": "http://{host}:4031",
+      "backendPort": 4031,
+      "realtime": "none"
+    },
+    {
+      "id": "leaderboard",
+      "name": "Leaderboard",
+      "icon": "🏆",
+      "type": "iframe",
+      "description": "Game standings and statistics",
+      "category": "utility",
+      "url": "http://{host}:5030",
+      "backendPort": 5030
+    },
+    {
+      "id": "season-scheduler",
+      "name": "Season Scheduler",
+      "icon": "🗓️",
+      "type": "iframe",
+      "description": "Schedule pub league seasons for Darts, Pool, and Crib",
+      "category": "utility",
+      "url": "http://{host}:5040",
+      "backendPort": 5040
+    },
+    {
+      "id": "quiz-player",
+      "name": "Quiz Player",
+      "icon": "🧠",
+      "type": "iframe",
+      "description": "Join and play live pub quizzes",
+      "category": "game",
+      "url": "http://{host}:4041",
+      "backendPort": 4041,
+      "realtime": "sse"
+    },
+    {
+      "id": "quiz-master",
+      "name": "Quiz Master",
+      "icon": "🎤",
+      "type": "iframe",
+      "description": "Run and control a live quiz session",
+      "category": "utility",
+      "url": "http://{host}:5080",
+      "backendPort": 5080,
+      "realtime": "sse"
+    },
+    {
+      "id": "quiz-display",
+      "name": "Quiz Display",
+      "icon": "📺",
+      "type": "iframe",
+      "description": "Full-screen TV display for quiz sessions",
+      "category": "utility",
+      "url": "http://{host}:5081",
+      "backendPort": 5081,
+      "realtime": "sse"
+    },
+    {
+      "id": "mobile-test",
+      "name": "Mobile Test",
+      "icon": "📱",
+      "type": "iframe",
+      "description": "Verify media (text, image, audio) works on your device",
+      "category": "utility",
+      "url": "http://{host}:4061",
+      "backendPort": 4061
+    }
+  ]
+}
