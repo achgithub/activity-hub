@@ -9,15 +9,18 @@
 -- Stores user identity, authentication credentials, and roles
 CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    code_hash VARCHAR(255),                -- Bcrypt hash of password (can be NULL for demo tokens)
+    name VARCHAR(255),                     -- NULL until email is verified
+    code_hash VARCHAR(255),                -- Bcrypt hash of password (NULL until verified)
     is_admin BOOLEAN DEFAULT FALSE,        -- Legacy admin flag (deprecated, use roles)
     roles TEXT[] DEFAULT '{}',             -- Array of role strings: 'super_user', 'setup_admin', etc.
+    email_verified BOOLEAN DEFAULT FALSE,  -- User has verified their email address
+    verified_at TIMESTAMP,                 -- When email was verified
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_verified ON users(email_verified);
 CREATE INDEX idx_users_roles ON users USING GIN(roles);
 
 -- ============================================================================
@@ -51,7 +54,47 @@ CREATE INDEX idx_apps_enabled ON applications(enabled);
 CREATE INDEX idx_apps_display_order ON applications(display_order);
 
 -- ============================================================================
--- TABLE 3: USER_APP_PREFERENCES
+-- TABLE 3: EMAIL_VERIFICATIONS
+-- ============================================================================
+-- Email verification tokens for sign-up and email changes
+-- User receives email with verification link containing token
+-- Token is single-use and expires after 24 hours
+CREATE TABLE IF NOT EXISTS email_verifications (
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(255) UNIQUE NOT NULL,    -- Random token sent in email
+    email VARCHAR(255) NOT NULL,           -- Email to be verified
+    purpose VARCHAR(50) NOT NULL,          -- 'signup' or 'email_change'
+    expires_at TIMESTAMP NOT NULL,         -- Token expires (24 hours)
+    used_at TIMESTAMP,                     -- When token was used (NULL if unused)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_email_verify_token ON email_verifications(token);
+CREATE INDEX idx_email_verify_email ON email_verifications(email);
+CREATE INDEX idx_email_verify_expires ON email_verifications(expires_at);
+
+-- ============================================================================
+-- TABLE 4: PASSWORD_RESETS
+-- ============================================================================
+-- Password reset tokens for forgotten passwords
+-- User receives email with reset link containing token
+-- Token is single-use and expires after 1 hour
+CREATE TABLE IF NOT EXISTS password_resets (
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(255) UNIQUE NOT NULL,    -- Random token sent in email
+    email VARCHAR(255) NOT NULL,           -- Email requesting reset (FK to users)
+    expires_at TIMESTAMP NOT NULL,         -- Token expires (1 hour)
+    used_at TIMESTAMP,                     -- When token was used (NULL if unused)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_reset_user FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_password_reset_token ON password_resets(token);
+CREATE INDEX idx_password_reset_email ON password_resets(email);
+CREATE INDEX idx_password_reset_expires ON password_resets(expires_at);
+
+-- ============================================================================
+-- TABLE 4.5: USER_APP_PREFERENCES
 -- ============================================================================
 -- User customization per app (visibility, favorites, custom ordering)
 -- Allows users to hide apps, mark favorites, reorder
@@ -183,12 +226,22 @@ CREATE INDEX idx_awareness_session ON awareness_events(app_id, session_id, creat
 -- BOOTSTRAP DATA
 -- ============================================================================
 -- Initial user accounts and app definitions for fresh installation
+--
+-- Bootstrap admin user:
+--   Email: admin@activity-hub.com
+--   Password: 123456
+--   Bcrypt hash: $2a$10$bz7aFH/Yx4h7zyKLa6.cXe4x/L1pFWrU9.rEqf6TK7j2bJ8w7dEyO
+--   (Generate with: echo 123456 | htpasswd -nbBC 10 admin | cut -d: -f2)
+--
+-- New users register via self-registration flow:
+--   1. POST /api/auth/register with email
+--   2. Email verification link sent
+--   3. User clicks link, sets password
+--   4. Email verified, account active
 
--- Insert demo users
-INSERT INTO users (email, name, is_admin, roles) VALUES
-    ('admin@test.com', 'Admin User', TRUE, ARRAY['super_user', 'setup_admin']),
-    ('alice@test.com', 'Alice', FALSE, ARRAY[]::TEXT[]),
-    ('bob@test.com', 'Bob', FALSE, ARRAY[]::TEXT[])
+-- Insert bootstrap admin user (verified, with password 123456)
+INSERT INTO users (email, name, code_hash, is_admin, roles, email_verified, verified_at) VALUES
+    ('admin@activity-hub.com', 'Admin', '$2a$10$bz7aFH/Yx4h7zyKLa6.cXe4x/L1pFWrU9.rEqf6TK7j2bJ8w7dEyO', TRUE, ARRAY['super_user', 'setup_admin'], TRUE, CURRENT_TIMESTAMP)
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert app definitions
@@ -250,17 +303,18 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 -- SCHEMA COMPLETE
 -- ============================================================================
--- All 7 tables created with proper constraints, foreign keys, and indexes
--- Bootstrap data (3 users, 14 apps) inserted
+-- All 9 tables created with proper constraints, foreign keys, and indexes
+-- Bootstrap admin user inserted, ready for self-registration
 -- Helper functions for maintenance ready to use
 --
 -- Usage on Pi:
---   psql -U activityhub -d activity_hub < /path/to/init.sql
+--   psql -d activity_hub < /path/to/init.sql
 --
 -- This creates:
--- - 7 tables (users, applications, user_app_preferences, challenges,
---   impersonation_sessions, app_lifecycle_events, awareness_events)
--- - 20+ indexes for optimal query performance
+-- - 9 tables (users, applications, user_app_preferences, challenges,
+--   impersonation_sessions, email_verifications, password_resets,
+--   app_lifecycle_events, awareness_events)
+-- - 24+ indexes for optimal query performance
 -- - Foreign key constraints for referential integrity
 -- - Helper functions for maintenance
--- - Bootstrap data for testing
+-- - Bootstrap admin user (admin@activity-hub.com / 123456)

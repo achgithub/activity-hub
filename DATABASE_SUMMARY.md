@@ -16,7 +16,7 @@ Complete database initialization and deployment infrastructure for Activity Hub 
 
 ---
 
-## Database Schema (7 Tables)
+## Database Schema (9 Tables)
 
 ### Table 1: `users`
 **Purpose:** Authentication, user profiles, role-based access control
@@ -61,7 +61,42 @@ Complete database initialization and deployment infrastructure for Activity Hub 
 
 ---
 
-### Table 3: `user_app_preferences`
+### Table 3: `email_verifications`
+**Purpose:** Email verification tokens for sign-up and password reset flows
+
+**Columns:**
+- `id` (SERIAL) - Primary key
+- `token` (VARCHAR 255) - Random token sent in verification email
+- `email` (VARCHAR 255) - Email address to verify
+- `purpose` (VARCHAR 50) - 'signup' or 'email_change'
+- `expires_at` (TIMESTAMP) - When token expires (24 hours for signup)
+- `used_at` (TIMESTAMP) - When token was used (NULL if unused)
+- `created_at` (TIMESTAMP)
+
+**Indexes:** token (unique), email, expires_at
+
+**Single-use:** Once verified, token is marked used and can't be reused
+
+---
+
+### Table 4: `password_resets`
+**Purpose:** Password reset tokens for forgotten passwords
+
+**Columns:**
+- `id` (SERIAL) - Primary key
+- `token` (VARCHAR 255) - Random token sent in reset email
+- `email` (VARCHAR 255) - User's email (FK to users)
+- `expires_at` (TIMESTAMP) - When token expires (1 hour)
+- `used_at` (TIMESTAMP) - When token was used (NULL if unused)
+- `created_at` (TIMESTAMP)
+
+**Indexes:** token (unique), email, expires_at
+
+**Single-use:** Once password reset, token is marked used
+
+---
+
+### Table 5: `user_app_preferences`
 **Purpose:** User customization per app (hidden, favorites, custom ordering)
 
 **Columns:**
@@ -79,7 +114,7 @@ Complete database initialization and deployment infrastructure for Activity Hub 
 
 ---
 
-### Table 4: `challenges`
+### Table 6: `challenges`
 **Purpose:** Game challenges - 2-player (legacy) and multi-player (new)
 
 **Columns:**
@@ -100,7 +135,7 @@ Complete database initialization and deployment infrastructure for Activity Hub 
 
 ---
 
-### Table 5: `impersonation_sessions`
+### Table 7: `impersonation_sessions`
 **Purpose:** Admin impersonation tracking and audit trail
 
 **Columns:**
@@ -118,7 +153,7 @@ Complete database initialization and deployment infrastructure for Activity Hub 
 
 ---
 
-### Table 6: `app_lifecycle_events`
+### Table 8: `app_lifecycle_events`
 **Purpose:** App launcher event logging (for debugging and analytics)
 
 **Columns:**
@@ -136,7 +171,7 @@ Complete database initialization and deployment infrastructure for Activity Hub 
 
 ---
 
-### Table 7: `awareness_events`
+### Table 9: `awareness_events`
 **Purpose:** User presence and session tracking (heartbeats, status changes, joins/leaves, grace period)
 
 **Columns:**
@@ -218,17 +253,81 @@ See [rpibuildscripts README](https://github.com/achgithub/rpibuildscripts#readme
 
 ---
 
-## Bootstrap Data
+## Authentication & Self-Registration
 
-### Users (Demo Tokens)
+### Bootstrap Admin User
 
-All users log in with token format: `demo-token-{email}`
+One admin user pre-created:
 
+| Email | Password | Roles | Status |
+|-------|----------|-------|--------|
+| **admin@activity-hub.com** | 123456 | super_user, setup_admin | Email verified |
+
+Login immediately:
+```bash
+POST /api/auth/login
+{
+  "email": "admin@activity-hub.com",
+  "code": "123456"
+}
 ```
-admin@test.com       | Admin User | Roles: super_user, setup_admin
-alice@test.com       | Alice      | Regular user
-bob@test.com         | Bob        | Regular user
+
+### Self-Registration Flow
+
+**Step 1: User registers**
+```bash
+POST /api/auth/register
+{
+  "email": "alice@example.com"
+}
 ```
+→ Backend creates unverified user, sends verification email
+
+**Step 2: User clicks email link**
+- Email contains: `http://localhost:3001/verify-email?token={token}`
+- Frontend opens verification page
+
+**Step 3: User sets password**
+```bash
+POST /api/auth/verify-email
+{
+  "token": "{token_from_email}",
+  "password": "user_chosen_password"
+}
+```
+→ Backend validates token, sets bcrypt password hash, marks email verified
+→ Returns auth token for immediate login
+
+### Password Reset Flow
+
+**Step 1: User requests reset**
+```bash
+POST /api/auth/request-password-reset
+{
+  "email": "alice@example.com"
+}
+```
+→ Backend sends reset email with 1-hour token
+
+**Step 2: User clicks reset link**
+- Email contains: `http://localhost:3001/reset-password?token={token}`
+
+**Step 3: User sets new password**
+```bash
+POST /api/auth/reset-password
+{
+  "token": "{token_from_email}",
+  "password": "new_password"
+}
+```
+→ Backend updates password hash, token marked used
+
+### Token Storage
+
+All tokens are single-use and expire:
+- Email verification: 24 hours
+- Password reset: 1 hour
+- Used tokens: Can't be reused (marked in `used_at`)
 
 ### Apps (14 Pre-Registered)
 
@@ -294,7 +393,14 @@ cd backend && go build -o activity-hub-backend .
 
 # 5. Access application:
 # Browser: http://localhost:3001
-# Login: Use any bootstrap user + demo token
+# Login with bootstrap admin:
+#   Email: admin@activity-hub.com
+#   Password: 123456
+#
+# Or register new user:
+#   POST /api/auth/register with email
+#   Verify email link sent
+#   Set password via verification link
 ```
 
 ---
@@ -341,9 +447,12 @@ See `database/REDIS_SETUP.md` for Redis configuration details.
 ## Status
 
 **What's Included:**
-- ✅ Complete PostgreSQL schema (init.sql) - 7 tables with indexes and constraints
+- ✅ Complete PostgreSQL schema (init.sql) - 9 tables with indexes and constraints
+- ✅ Self-registration with email verification
+- ✅ Password reset via email
+- ✅ Bootstrap admin user (admin@activity-hub.com / 123456)
+- ✅ 14 pre-registered apps
 - ✅ Redis key patterns reference (REDIS_SETUP.md)
-- ✅ Bootstrap data (3 users, 14 apps)
 
 **Deployment Uses:**
 - 🔗 [rpibuildscripts](https://github.com/achgithub/rpibuildscripts) for dependencies
