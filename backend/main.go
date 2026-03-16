@@ -18,6 +18,7 @@ import (
 )
 
 var db *sql.DB
+var appLauncher *AppLauncher
 
 func main() {
 	var err error
@@ -57,6 +58,21 @@ func main() {
 	if err := LoadAppRegistry(); err != nil {
 		log.Printf("Warning: Failed to load app registry: %v", err)
 	}
+
+	// Initialize app launcher
+	appLauncher = NewAppLauncher()
+	defer appLauncher.Cleanup()
+
+	// Start daily cleanup job for old app lifecycle events
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := CleanupOldAppEvents(); err != nil {
+				log.Printf("Warning: Failed to cleanup old app events: %v", err)
+			}
+		}
+	}()
 
 	// Setup router
 	r := mux.NewRouter()
@@ -98,6 +114,16 @@ func main() {
 	// Impersonation endpoints (require super_user role)
 	admin.HandleFunc("/impersonate", requireSuperUser(handleStartImpersonation)).Methods("POST")
 	admin.HandleFunc("/end-impersonation", handleEndImpersonation).Methods("POST")
+
+	// App launcher endpoints (Unix socket based mini-app lifecycle management)
+	apps := r.PathPrefix("/api/apps").Subrouter()
+	apps.HandleFunc("/{appId}/launch", HandleAppLaunch).Methods("POST")
+	apps.HandleFunc("/{appId}/stop", HandleAppStop).Methods("POST")
+	apps.HandleFunc("/{appId}/health", HandleAppHealth).Methods("GET")
+	apps.HandleFunc("/running", HandleGetRunningApps).Methods("GET")
+	// Proxy endpoints - must be last to catch all remaining paths
+	apps.HandleFunc("/{appId}/proxy", HandleAppProxy).Methods("GET", "POST", "PUT", "DELETE", "PATCH")
+	apps.HandleFunc("/{appId}/proxy/{path:.*}", HandleAppProxy).Methods("GET", "POST", "PUT", "DELETE", "PATCH")
 
 	// Serve frontend React app (includes /static/ for JS/CSS bundles)
 	frontendDir := "../frontend/build"
