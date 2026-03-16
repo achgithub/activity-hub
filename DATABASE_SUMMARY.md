@@ -184,37 +184,37 @@ REDIS_PASSWORD=          # Empty if no auth (default)
 
 ---
 
-## Deployment Options
+## Deployment on Pi
 
-### Option 1: Automated (Recommended)
+Use the **rpibuildscripts** project to set up dependencies:
+
+```bash
+# Clone rpibuildscripts
+cd ~
+git clone git@github.com:achgithub/rpibuildscripts.git
+cd rpibuildscripts
+
+# Run setup scripts (idempotent - safe to rerun)
+./go_setup_fixed.sh
+./postgresql_setup.sh
+./redis_setup.sh
+
+# Load environment
+source ~/.postgresql_env.sh
+source ~/.redis_env.sh
+```
+
+Then initialize activity-hub database:
 
 ```bash
 cd ~/activity-hub
-./scripts/deploy-pi.sh
+psql -U $PGUSER -d postgres -c "CREATE DATABASE activity_hub OWNER $PGUSER;"
+psql -U $PGUSER -d activity_hub < database/init.sql
 ```
 
-This runs all phases automatically:
-1. Install dependencies (Go, Node, PostgreSQL, Redis)
-2. Create and initialize PostgreSQL database
-3. Configure Redis
-4. Set up environment variables
-5. Build backend and frontend
-6. Build all mini-apps
-7. Verify everything works
+**Time:** ~30-45 minutes total
 
-**Time:** ~30-45 minutes
-
-### Option 2: Manual
-
-Follow steps in `database/DEPLOYMENT_GUIDE.md`:
-1. Install system dependencies
-2. Create PostgreSQL database
-3. Run init.sql
-4. Configure PostgreSQL and Redis
-5. Build services
-6. Start services
-
-**Time:** ~45-60 minutes (more control)
+See [rpibuildscripts README](https://github.com/achgithub/rpibuildscripts#readme) for detailed instructions.
 
 ---
 
@@ -254,15 +254,15 @@ bob@test.com         | Bob        | Regular user
 
 ## Service Ports and Connections
 
-| Service | Host | Port | User | Pass | Purpose |
-|---------|------|------|------|------|---------|
-| PostgreSQL | localhost | 5555 | activityhub | pubgames | Main database |
-| Redis | localhost | 6379 | - | - | Real-time features |
-| Backend | localhost | 3001 | - | - | API and frontend |
+| Service | Host | Port | Purpose |
+|---------|------|------|---------|
+| PostgreSQL | localhost | 5432 | Main database (via rpibuildscripts) |
+| Redis | localhost | 6379 | Real-time features (via rpibuildscripts) |
+| Backend | localhost | 3001 | API and frontend |
 
 **Access Database:**
 ```bash
-psql -h localhost -p 5555 -U activityhub -d activity_hub
+psql -d activity_hub
 ```
 
 **Access Redis:**
@@ -278,17 +278,18 @@ redis-cli
 # 1. SSH into Pi
 ssh pi@your-pi-ip
 
-# 2. Navigate to activity-hub
+# 2. Setup dependencies (rpibuildscripts)
+cd ~ && git clone git@github.com:achgithub/rpibuildscripts.git
+cd rpibuildscripts
+./go_setup_fixed.sh && ./postgresql_setup.sh && ./redis_setup.sh
+
+# 3. Initialize activity-hub database
 cd ~/activity-hub
+psql -c "CREATE DATABASE activity_hub;"
+psql -d activity_hub < database/init.sql
 
-# 3. Run deployment script
-./scripts/deploy-pi.sh
-
-# Follow prompts and wait for completion (30-45 min)
-
-# 4. After script completes, start backend:
-source ~/.activity-hub-env
-cd backend
+# 4. Build and start backend
+cd backend && go build -o activity-hub-backend .
 ./activity-hub-backend
 
 # 5. Access application:
@@ -302,14 +303,12 @@ cd backend
 
 | Issue | Check | Fix |
 |-------|-------|-----|
-| PostgreSQL won't connect | `sudo systemctl status postgresql` | Check port 5555, restart service |
-| Redis won't connect | `redis-cli ping` | Should return PONG, restart service |
-| Backend won't start | Check env vars: `echo $DB_HOST $REDIS_HOST` | Load: `source ~/.activity-hub-env` |
-| App won't launch | `ls /tmp/activity-hub-*.sock` | Check app binary exists, review logs |
-| Port already in use | `sudo lsof -i :3001` | Change port or kill process |
-| Out of memory | `free -h` | Reduce Redis maxmemory or use larger Pi |
+| PostgreSQL won't connect | `psql -c "SELECT 1;"` | Verify service running, check env vars |
+| Redis won't connect | `redis-cli ping` | Should return PONG, check service status |
+| Backend won't start | Check `PGHOST`, `PGPORT`, `REDIS_HOST` | Load env: `source ~/.postgresql_env.sh ~/.redis_env.sh` |
+| Database schema missing | `psql -d activity_hub -c "\dt"` | Should show 7 tables, run: `psql -d activity_hub < database/init.sql` |
 
-See `database/DEPLOYMENT_GUIDE.md` for detailed troubleshooting.
+See `database/REDIS_SETUP.md` for Redis configuration details.
 
 ---
 
@@ -319,56 +318,34 @@ See `database/DEPLOYMENT_GUIDE.md` for detailed troubleshooting.
 |------|---------|
 | database/init.sql | PostgreSQL schema (7 tables, 20+ indexes) |
 | database/REDIS_SETUP.md | Redis configuration and key patterns |
-| database/DEPLOYMENT_GUIDE.md | Complete deployment instructions |
-| scripts/deploy-pi.sh | Automated deployment script |
 | docs/APP_LAUNCHER.md | App lifecycle management |
 | docs/AWARENESS_SERVICE.md | Presence and session tracking |
 | docs/MINI_APP_INTEGRATION.md | How to add mini-apps |
 | IMPLEMENTATION_SUMMARY.md | Project overview |
 
+**External:**
+| File | Purpose |
+|------|---------|
+| [rpibuildscripts](https://github.com/achgithub/rpibuildscripts) | Idempotent Pi setup scripts (Go, PostgreSQL, Redis) |
+
 ---
 
 ## Next Steps
 
-After deployment:
-
-1. **Login to Application**
-   - URL: http://localhost:3001
-   - User: alice@test.com
-   - Token: demo-token-alice@test.com
-
-2. **Test App Launcher**
-   - Click "Leaderboard" tile (static app)
-   - Should launch and display in iframe
-
-3. **Test Multiplayer**
-   - Open two browser windows as alice and bob
-   - Send challenge for tic-tac-toe
-   - Both should see session participants
-
-4. **Integrate Mini-App**
-   - Follow docs/MINI_APP_INTEGRATION.md
-   - Test app launch and proxy functionality
-   - Verify multiplayer session tracking
-
-5. **Monitor for 24 Hours**
-   - Check database size growth
-   - Monitor Redis memory
-   - Review logs for errors
+1. Database schema initialized
+2. Start backend and test with bootstrap users
+3. Follow docs/MINI_APP_INTEGRATION.md to add mini-apps
 
 ---
 
-## Commit Information
+## Status
 
-**Commit:** 229dff0
-**Message:** Add complete PostgreSQL schema and Pi deployment infrastructure
+**What's Included:**
+- ✅ Complete PostgreSQL schema (init.sql) - 7 tables with indexes and constraints
+- ✅ Redis key patterns reference (REDIS_SETUP.md)
+- ✅ Bootstrap data (3 users, 14 apps)
 
-Includes:
-- Complete database schema (init.sql)
-- Redis configuration guide (REDIS_SETUP.md)
-- Deployment guide (DEPLOYMENT_GUIDE.md)
-- Automated deployment script (deploy-pi.sh)
-
-**Status:** Ready for Pi deployment
+**Deployment Uses:**
+- 🔗 [rpibuildscripts](https://github.com/achgithub/rpibuildscripts) for dependencies
 
 **Last Updated:** 2026-03-16
