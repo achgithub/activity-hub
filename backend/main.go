@@ -19,6 +19,7 @@ import (
 
 var db *sql.DB
 var appLauncher *AppLauncher
+var sseBroadcaster *SSEBroadcaster
 
 func main() {
 	var err error
@@ -63,13 +64,19 @@ func main() {
 	appLauncher = NewAppLauncher()
 	defer appLauncher.Cleanup()
 
-	// Start daily cleanup job for old app lifecycle events
+	// Initialize SSE broadcaster for awareness events
+	sseBroadcaster = NewSSEBroadcaster()
+
+	// Start daily cleanup jobs
 	go func() {
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
 			if err := CleanupOldAppEvents(); err != nil {
 				log.Printf("Warning: Failed to cleanup old app events: %v", err)
+			}
+			if err := CleanupOldAwarenessEvents(); err != nil {
+				log.Printf("Warning: Failed to cleanup old awareness events: %v", err)
 			}
 		}
 	}()
@@ -124,6 +131,17 @@ func main() {
 	// Proxy endpoints - must be last to catch all remaining paths
 	apps.HandleFunc("/{appId}/proxy", HandleAppProxy).Methods("GET", "POST", "PUT", "DELETE", "PATCH")
 	apps.HandleFunc("/{appId}/proxy/{path:.*}", HandleAppProxy).Methods("GET", "POST", "PUT", "DELETE", "PATCH")
+
+	// Awareness service endpoints (user presence and multiplayer session tracking)
+	awareness := r.PathPrefix("/api/awareness").Subrouter()
+	awareness.HandleFunc("/heartbeat", HandleAwarenessHeartbeat).Methods("POST")
+	awareness.HandleFunc("/status", HandleAwarenessStatus).Methods("POST")
+	awareness.HandleFunc("/users", HandleGetOnlineUsers).Methods("GET")
+	awareness.HandleFunc("/stream", HandleAwarenessStream).Methods("GET")
+	awareness.HandleFunc("/sessions/join", HandleSessionJoin).Methods("POST")
+	awareness.HandleFunc("/sessions/leave", HandleSessionLeave).Methods("POST")
+	awareness.HandleFunc("/sessions/{appId}/{sessionId}", HandleGetSessionParticipants).Methods("GET")
+	awareness.HandleFunc("/sessions/stream/{appId}/{sessionId}", HandleSessionStream).Methods("GET")
 
 	// Serve frontend React app (includes /static/ for JS/CSS bundles)
 	frontendDir := "../frontend/build"
