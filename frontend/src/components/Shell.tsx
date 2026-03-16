@@ -62,18 +62,10 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   });
   const notificationCount = receivedChallenges.filter(c => c.status === 'pending').length;
 
-  // Redirect to app (leaves the shell entirely)
+  // Navigate to app container (which launches the app via Unix socket)
   const handleAppClick = (appId: string) => {
-    const app = apps.find(a => a.id === appId);
-    if (app) {
-      const appUrl = buildAppUrl(app, {
-        userId: user.email,
-        userName: user.name,
-        isAdmin: user.is_admin,
-      });
-      console.log('🎮 Redirecting to app:', appUrl);
-      window.location.href = appUrl;
-    }
+    console.log('🎮 Navigating to app:', appId);
+    navigate(`/app/${appId}`);
   };
 
   const handleDismissToast = () => {

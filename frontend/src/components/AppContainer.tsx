@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppDefinition, User } from '@activity-hub/core';
-import { buildAppUrl } from '../hooks/useApps';
+import { buildAppUrl, launchApp } from '../hooks/useApps';
 
 interface AppContainerProps {
   apps: AppDefinition[];
@@ -12,11 +12,35 @@ const AppContainer: React.FC<AppContainerProps> = ({ apps, user }) => {
   const { appId } = useParams<{ appId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [isLaunching, setIsLaunching] = useState(true);
+  const [launchError, setLaunchError] = useState<string | null>(null);
 
   // Get gameId from URL if present (for challenge-based games)
   const gameId = searchParams.get('gameId') || undefined;
 
   const app = apps.find((a) => a.id === appId);
+
+  // Launch the app when component mounts
+  useEffect(() => {
+    if (!appId) return;
+
+    const launchAppAsync = async () => {
+      try {
+        setIsLaunching(true);
+        setLaunchError(null);
+        await launchApp(appId, gameId);
+        console.log(`✅ App ${appId} ready`);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to launch app';
+        setLaunchError(errorMsg);
+        console.error(`❌ Failed to launch app ${appId}:`, err);
+      } finally {
+        setIsLaunching(false);
+      }
+    };
+
+    launchAppAsync();
+  }, [appId, gameId]);
 
   // Listen for messages from iframe apps (e.g., "close app" requests)
   useEffect(() => {
@@ -76,7 +100,22 @@ const AppContainer: React.FC<AppContainerProps> = ({ apps, user }) => {
       </div>
 
       <div className="flex-1 overflow-auto">
-        {app.type === 'iframe' && iframeUrl ? (
+        {launchError ? (
+          <div className="ah-flex-col-center-justify min-h-screen ah-container">
+            <div className="text-6xl">⚠️</div>
+            <h3 className="mt-4">Failed to Launch App</h3>
+            <p className="ah-meta">{launchError}</p>
+            <button className="ah-btn-primary mt-4" onClick={() => navigate('/lobby')}>
+              Return to Lobby
+            </button>
+          </div>
+        ) : isLaunching ? (
+          <div className="ah-flex-col-center-justify min-h-screen ah-container">
+            <div className="text-6xl">🚀</div>
+            <h3 className="mt-4">Launching {app.name}...</h3>
+            <p className="ah-meta">Please wait while we start the app</p>
+          </div>
+        ) : app.type === 'iframe' && iframeUrl ? (
           <iframe
             src={iframeUrl}
             title={app.name}

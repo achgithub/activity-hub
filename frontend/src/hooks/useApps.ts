@@ -55,25 +55,35 @@ export function useApps() {
   return { apps, loading, error, refreshApps };
 }
 
-// Helper to build the app URL with query params
-export function buildAppUrl(
-  app: AppDefinition,
+// Helper to launch an app via the Unix socket launcher
+export async function launchApp(appId: string, gameId?: string): Promise<void> {
+  try {
+    const url = gameId
+      ? `${API_BASE}/api/apps/${appId}/launch?gameId=${gameId}`
+      : `${API_BASE}/api/apps/${appId}/launch`;
+
+    const response = await fetch(url, { method: 'POST' });
+    if (!response.ok) {
+      throw new Error(`Failed to launch app: ${response.statusText}`);
+    }
+
+    console.log(`✅ App ${appId} launched successfully`);
+  } catch (err) {
+    console.error(`Failed to launch app ${appId}:`, err);
+    throw err;
+  }
+}
+
+// Helper to build the proxy URL for an app
+export function buildProxyUrl(
+  appId: string,
   params: { userId?: string; userName?: string; isAdmin?: boolean; gameId?: string }
 ): string {
-  console.log('🔍 buildAppUrl called:', {
-    appId: app.id,
-    appUrl: app.url,
-    params: params,
-  });
-
-  if (!app.url) return '';
-
-  // Replace {host} placeholder with current hostname
-  let url = app.url.replace('{host}', window.location.hostname);
-
   // Get token from localStorage (stored as 'token' by App.tsx handleLogin)
   const token = localStorage.getItem('token');
-  console.log('🔍 Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'MISSING');
+
+  // Build proxy URL
+  let url = `/api/apps/${appId}/proxy/`;
 
   // Add query params
   const searchParams = new URLSearchParams();
@@ -88,9 +98,25 @@ export function buildAppUrl(
     url += (url.includes('?') ? '&' : '?') + queryString;
   }
 
-  console.log('🔍 buildAppUrl result:', url);
+  console.log('🔍 buildProxyUrl result:', url);
 
   return url;
+}
+
+// Helper to build the app URL with query params
+// Now uses Unix socket proxy instead of direct TCP connection
+export function buildAppUrl(
+  app: AppDefinition,
+  params: { userId?: string; userName?: string; isAdmin?: boolean; gameId?: string }
+): string {
+  console.log('🔍 buildAppUrl called:', {
+    appId: app.id,
+    appUrl: app.url,
+    params: params,
+  });
+
+  // Use proxy URL for all iframe apps
+  return buildProxyUrl(app.id, params);
 }
 
 export default useApps;
