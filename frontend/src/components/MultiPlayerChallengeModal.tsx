@@ -13,7 +13,7 @@ interface MultiPlayerChallengeModalProps {
   multiPlayerApps: AppDefinition[]; // Apps with minPlayers > 2 or maxPlayers > 2
   onConfirm: (appId: string, playerIds: string[], options: ChallengeOptions) => void;
   onCancel: () => void;
-  fetchGameConfig: (appId: string, backendPort: number) => Promise<GameConfig | null>;
+  fetchGameConfig: (appId: string) => Promise<GameConfig | null>;
 }
 
 const MultiPlayerChallengeModal: React.FC<MultiPlayerChallengeModalProps> = ({
@@ -44,9 +44,9 @@ const MultiPlayerChallengeModal: React.FC<MultiPlayerChallengeModalProps> = ({
   // Load game config when moving to options step
   useEffect(() => {
     const loadConfig = async () => {
-      if (selectedApp?.backendPort && step === 'options') {
+      if (selectedApp && step === 'options') {
         setLoading(true);
-        const gameConfig = await fetchGameConfig(selectedApp.id, selectedApp.backendPort);
+        const gameConfig = await fetchGameConfig(selectedApp.id);
         setConfig(gameConfig);
 
         // Initialize options with defaults

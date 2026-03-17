@@ -6,7 +6,7 @@ interface ChallengeModalProps {
   challengeableApps: AppDefinition[];
   onConfirm: (appId: string, options: ChallengeOptions) => void;
   onCancel: () => void;
-  fetchGameConfig: (appId: string, backendPort: number) => Promise<GameConfig | null>;
+  fetchGameConfig: (appId: string) => Promise<GameConfig | null>;
 }
 
 const ChallengeModal: React.FC<ChallengeModalProps> = ({
@@ -27,9 +27,9 @@ const ChallengeModal: React.FC<ChallengeModalProps> = ({
   // Load game config when app is selected
   useEffect(() => {
     const loadConfig = async () => {
-      if (selectedApp?.backendPort) {
+      if (selectedApp) {
         setLoading(true);
-        const gameConfig = await fetchGameConfig(selectedApp.id, selectedApp.backendPort);
+        const gameConfig = await fetchGameConfig(selectedApp.id);
         setConfig(gameConfig);
 
         // Initialize options with defaults

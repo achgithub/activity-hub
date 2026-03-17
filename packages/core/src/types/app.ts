@@ -13,7 +13,7 @@ export interface AppDefinition {
   url?: string; // URL template with {host} placeholder
   description: string;
   category: 'game' | 'utility' | 'admin';
-  backendPort?: number;
+  backendPort?: number; // DEPRECATED: Legacy TCP port support, use Unix socket proxy instead
   realtime?: RealtimeType;
   minPlayers?: number; // Minimum players for multi-player games (e.g., 3)
   maxPlayers?: number; // Maximum players for multi-player games (e.g., 6)

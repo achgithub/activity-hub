@@ -8,7 +8,7 @@ interface GameChallengeModalProps {
   favoriteUsers: Set<string>;
   onConfirm: (appId: string, playerIds: string[], options: ChallengeOptions) => void;
   onCancel: () => void;
-  fetchGameConfig: (appId: string, backendPort: number) => Promise<GameConfig | null>;
+  fetchGameConfig: (appId: string) => Promise<GameConfig | null>;
 }
 
 const GameChallengeModal: React.FC<GameChallengeModalProps> = ({
@@ -56,21 +56,19 @@ const GameChallengeModal: React.FC<GameChallengeModalProps> = ({
   // Load game config when component mounts
   useEffect(() => {
     const loadConfig = async () => {
-      if (app.backendPort) {
-        setLoading(true);
-        const gameConfig = await fetchGameConfig(app.id, app.backendPort);
-        setConfig(gameConfig);
+      setLoading(true);
+      const gameConfig = await fetchGameConfig(app.id);
+      setConfig(gameConfig);
 
-        // Initialize options with defaults
-        if (gameConfig?.gameOptions) {
-          const defaults: ChallengeOptions = {};
-          gameConfig.gameOptions.forEach(opt => {
-            defaults[opt.id] = opt.default;
-          });
-          setOptions(defaults);
-        }
-        setLoading(false);
+      // Initialize options with defaults
+      if (gameConfig?.gameOptions) {
+        const defaults: ChallengeOptions = {};
+        gameConfig.gameOptions.forEach(opt => {
+          defaults[opt.id] = opt.default;
+        });
+        setOptions(defaults);
       }
+      setLoading(false);
     };
 
     loadConfig();

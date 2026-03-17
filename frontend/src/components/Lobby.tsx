@@ -12,7 +12,7 @@ interface LobbyProps {
   onlineUsers: UserPresence[];
   onSendChallenge: (toUser: string, appId: string, options?: ChallengeOptions) => Promise<boolean>;
   onSendMultiChallenge: (playerIds: string[], appId: string, minPlayers: number, maxPlayers: number, options?: ChallengeOptions) => Promise<boolean>;
-  fetchGameConfig: (appId: string, backendPort: number) => Promise<GameConfig | null>;
+  fetchGameConfig: (appId: string) => Promise<GameConfig | null>;
 }
 
 interface AppPreference {
@@ -190,12 +190,11 @@ const Lobby: React.FC<LobbyProps> = ({
     app: AppDefinition;
   } | null>(null);
 
-  // Get challengeable games (category: game, has realtime support, has backend port)
+  // Get challengeable games (category: game, has realtime support)
   const challengeableApps = apps.filter(app =>
     app.category === 'game' &&
     app.realtime &&
-    app.realtime !== 'none' &&
-    app.backendPort
+    app.realtime !== 'none'
   );
 
   // Split into 2-player and multi-player apps
@@ -243,15 +242,15 @@ const Lobby: React.FC<LobbyProps> = ({
     if (playerIds.length === 0) {
       setNewChallengeModal(null);
 
-      // Create game via backend
+      // Create game via Unix socket proxy
       try {
         const token = localStorage.getItem('token');
-        if (!token || !app?.backendPort) {
+        if (!token || !app) {
           onAppClick(appId);
           return;
         }
 
-        const response = await fetch(`http://${window.location.hostname}:${app.backendPort}/api/game`, {
+        const response = await fetch(`/api/apps/${appId}/proxy/api/game?userId=${userEmail}&userName=${encodeURIComponent(userName)}&token=${token}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -268,7 +267,7 @@ const Lobby: React.FC<LobbyProps> = ({
           const result = await response.json();
           // Launch app with gameId (use gameId from response, or game.id as fallback)
           const gameId = result.gameId || result.game?.id || result.id;
-          const appUrl = `http://${window.location.hostname}:${app.backendPort}?gameId=${gameId}&userId=${userEmail}&userName=${encodeURIComponent(userName)}&token=${token}`;
+          const appUrl = `/api/apps/${appId}/proxy?gameId=${gameId}&userId=${userEmail}&userName=${encodeURIComponent(userName)}&token=${token}`;
           window.location.href = appUrl;
         } else {
           // Fallback: just launch app
