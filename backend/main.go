@@ -148,10 +148,13 @@ func main() {
 
 	// Admin endpoints for roles
 	admin.HandleFunc("/roles", HandleGetAHRoles).Methods("GET")
+	admin.HandleFunc("/roles", HandleCreateRole).Methods("POST")
 	admin.HandleFunc("/users", HandleGetUsers).Methods("GET")
+	admin.HandleFunc("/users", HandleCreateUser).Methods("POST")
 	admin.HandleFunc("/users/{email}/roles", HandleGetUserRoles).Methods("GET")
 	admin.HandleFunc("/users/{email}/roles/{role}", HandleAssignRole).Methods("POST")
 	admin.HandleFunc("/users/{email}/roles/{role}", HandleRevokeRole).Methods("DELETE")
+	admin.HandleFunc("/users/{email}/reset-password", HandleResetUserPassword).Methods("POST")
 	admin.HandleFunc("/apps/register", HandleRegisterApp).Methods("POST")
 
 	// Serve frontend React app (includes /static/ for JS/CSS bundles)

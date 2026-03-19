@@ -338,6 +338,200 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandleCreateUser - POST /api/admin/users
+// Create a new user account
+func HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+	// Check admin permission
+	token := r.Header.Get("Authorization")
+	if token == "" || len(token) <= 7 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	admin, err := auth.ResolveToken(db, token[7:])
+	if err != nil || !isUserAdmin(admin.Email) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	var req struct {
+		Email    string `json:"email"`
+		Name     string `json:"name"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Email == "" || req.Password == "" {
+		http.Error(w, "Email and password required", http.StatusBadRequest)
+		return
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("Failed to hash password: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Insert user
+	_, err = db.Exec(`
+		INSERT INTO users (email, name, code_hash, is_admin, email_verified, created_at)
+		VALUES ($1, $2, $3, FALSE, FALSE, NOW())
+		ON CONFLICT (email) DO NOTHING
+	`, req.Email, req.Name, string(hashedPassword))
+
+	if err != nil {
+		log.Printf("Failed to create user: %v", err)
+		if err.Error() == "pq: duplicate key value violates unique constraint \"users_pkey\"" {
+			http.Error(w, "User already exists", http.StatusConflict)
+		} else {
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "User created successfully",
+		"email":   req.Email,
+	})
+}
+
+// HandleResetUserPassword - POST /api/admin/users/{email}/reset-password
+// Reset a user's password
+func HandleResetUserPassword(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userEmail := vars["email"]
+
+	// Check admin permission
+	token := r.Header.Get("Authorization")
+	if token == "" || len(token) <= 7 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	admin, err := auth.ResolveToken(db, token[7:])
+	if err != nil || !isUserAdmin(admin.Email) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	var req struct {
+		NewPassword string `json:"newPassword"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if req.NewPassword == "" {
+		http.Error(w, "New password required", http.StatusBadRequest)
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("Failed to hash password: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Update user password
+	result, err := db.Exec(`
+		UPDATE users
+		SET code_hash = $1
+		WHERE email = $2
+	`, string(hashedPassword), userEmail)
+
+	if err != nil {
+		log.Printf("Failed to reset password: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil || rowsAffected == 0 {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Password reset successfully",
+	})
+}
+
+// HandleCreateRole - POST /api/admin/roles
+// Create a new role or group
+func HandleCreateRole(w http.ResponseWriter, r *http.Request) {
+	// Check admin permission
+	token := r.Header.Get("Authorization")
+	if token == "" || len(token) <= 7 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	admin, err := auth.ResolveToken(db, token[7:])
+	if err != nil || !isUserAdmin(admin.Email) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	var req struct {
+		Id          string `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Type        string `json:"type"` // 'role' or 'group'
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Id == "" || req.Name == "" || (req.Type != "role" && req.Type != "group") {
+		http.Error(w, "ID, name, and type required", http.StatusBadRequest)
+		return
+	}
+
+	// Determine table based on type
+	table := "ah_roles"
+	if req.Type == "group" {
+		table = "ah_groups"
+	}
+
+	// Insert role/group
+	_, err = db.Exec(fmt.Sprintf(`
+		INSERT INTO %s (id, name, description)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (id) DO UPDATE SET
+			name = EXCLUDED.name,
+			description = EXCLUDED.description
+	`, table), req.Id, req.Name, req.Description)
+
+	if err != nil {
+		log.Printf("Failed to create role: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Role created successfully",
+		"id":      req.Id,
+	})
+}
+
 // HandleGetUsers - GET /api/admin/users
 // List all users with their assigned roles
 func HandleGetUsers(w http.ResponseWriter, r *http.Request) {
