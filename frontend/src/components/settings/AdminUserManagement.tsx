@@ -415,8 +415,8 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ onClose }) =>
 
         {/* Reset Password Modal */}
         {showResetPassword && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" onClick={() => setShowResetPassword(null)}>
-            <div className="ah-modal bg-white rounded-lg p-6 max-w-sm z-[60]" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999]" onClick={() => setShowResetPassword(null)}>
+            <div className="ah-modal bg-white rounded-lg p-6 max-w-sm z-[99999]" onClick={(e) => e.stopPropagation()}>
               <h4 className="font-semibold mb-4">Reset Password: {showResetPassword}</h4>
               <form onSubmit={handleResetPassword}>
                 <div className="mb-4">
