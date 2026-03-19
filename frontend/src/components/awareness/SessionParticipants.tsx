@@ -1,5 +1,5 @@
 import React from 'react';
-import { SessionParticipant } from '@activity-hub/core';
+import { SessionParticipant } from '../../types';
 import PresenceBadge from './PresenceBadge';
 
 interface SessionParticipantsProps {

@@ -1,8 +1,8 @@
 # Activity Hub - Claude Code Configuration
 
 **Project:** Activity Hub Platform
-**Status:** Phase 1 (Monorepo Setup + CSS Consolidation)
-**Last Updated:** 2026-03-16
+**Status:** Phase 2 (Flattened + SDK Extraction)
+**Last Updated:** 2026-03-19
 
 ---
 
@@ -14,10 +14,10 @@
 
 ```
 ✅ DO:                            ❌ DON'T:
-import '@activity-hub/ui/...        import './component.css'
+import './styles/activity-hub.css'  import './component.css'
 className="ah-btn-primary"          style={{ background: 'blue' }}
 <div className="ah-card">           <div style={{ padding: '10px' }}>
-@activity-hub/ui/CSS_GUIDE.md        /* custom CSS files */
+frontend/docs/CSS_GUIDE.md          /* custom CSS files */
 ```
 
 ---
@@ -30,7 +30,6 @@ className="ah-btn-primary"          style={{ background: 'blue' }}
    ```
    ❌ frontend/src/components/MyGame.css      ← NOT ALLOWED
    ❌ frontend/src/pages/Settings.css         ← NOT ALLOWED
-   ❌ packages/ui/src/components/Modal.css    ← NOT ALLOWED
    ```
    **Action:** Delete these files. Use `.ah-*` classes instead.
 
@@ -77,7 +76,7 @@ className="ah-btn-primary"          style={{ background: 'blue' }}
 ### Step 1: Import in Entry Point
 ```typescript
 // frontend/src/index.tsx
-import '@activity-hub/ui/styles/activity-hub.css';
+import './styles/activity-hub.css';
 import App from './App';
 ```
 
@@ -336,7 +335,7 @@ git commit --no-verify
    - Combine classes for complex layouts
 
 3. **ALWAYS import CSS in index.tsx**
-   - Verify: `import '@activity-hub/ui/styles/activity-hub.css'`
+   - Verify: `import './styles/activity-hub.css'` in frontend/src/index.tsx
    - Never import in component files
    - Never create new CSS files
 
@@ -355,43 +354,57 @@ git commit --no-verify
 
 ```
 activity-hub/
-├── packages/
-│   ├── core/               Types and interfaces
-│   ├── ui/
-│   │   ├── src/
-│   │   │   └── styles/
-│   │   │       └── activity-hub.css      ← SINGLE CSS FILE
-│   │   ├── CSS_GUIDE.md                  ← Developer reference
-│   │   └── CSS_AUDIT.md                  ← Design decisions
-│   └── sdk/                Hooks and utilities
-├── frontend/
-│   └── src/
-│       ├── index.tsx       ← Imports CSS here
-│       ├── App.tsx
-│       ├── components/     ← NO .css files here
-│       └── pages/
+├── frontend/                        Main React app (flattened)
+│   ├── src/
+│   │   ├── index.tsx               ← Imports CSS here
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   │   └── awareness/          ← Awareness components from old ui package
+│   │   ├── types/                  ← Types from old core package
+│   │   ├── styles/
+│   │   │   ├── activity-hub.css    ← SINGLE CSS FILE
+│   │   │   └── activity-hub-src.css
+│   │   └── hooks/
+│   ├── docs/
+│   │   ├── CSS_GUIDE.md            ← Developer reference
+│   │   └── CSS_AUDIT.md            ← Design decisions
+│   ├── tailwind.config.js          ← From old ui package
+│   ├── package.json                ← No workspace deps
+│   └── tsconfig.json
+├── sdk/                             Standalone publishable package
+│   ├── src/
+│   │   ├── awareness.ts
+│   │   ├── useAwareness.ts
+│   │   ├── useActivityHubContext.ts
+│   │   ├── types/                  ← Bundled types (same as frontend/src/types)
+│   │   └── index.ts
+│   ├── package.json                ← Publishable to npm
+│   ├── README.md
+│   └── tsconfig.json               ← Standalone config
+├── backend/                         Unchanged (Go)
+├── database/                        Unchanged (SQL)
 ├── .githooks/
-│   └── pre-commit          ← CSS enforcement hook
+│   └── pre-commit                  ← CSS enforcement hook
 ├── scripts/
-│   └── setup-git-hooks.sh  ← Install hook
-└── CLAUDE.md               ← This file
+│   └── setup-git-hooks.sh          ← Install hook
+└── CLAUDE.md                        ← This file
 ```
 
 ---
 
 ## Key Files to Reference
 
-1. **packages/ui/CSS_GUIDE.md** (11KB)
+1. **frontend/docs/CSS_GUIDE.md** (11KB)
    - Complete class reference with examples
    - 180+ utility classes documented
    - Best practices and patterns
 
-2. **packages/ui/CSS_AUDIT.md** (9.5KB)
+2. **frontend/docs/CSS_AUDIT.md** (9.5KB)
    - Audit findings and methodology
    - Color palette documentation
    - File organization details
 
-3. **packages/ui/src/styles/activity-hub.css** (1,538 lines)
+3. **frontend/src/styles/activity-hub.css** (1,538 lines)
    - Source CSS with inline comments
    - 23 organized sections
    - Ready for minification and publishing
@@ -412,13 +425,13 @@ activity-hub/
 ## Getting Help
 
 ### CSS Classes
-- See **packages/ui/CSS_GUIDE.md** for class reference
+- See **frontend/docs/CSS_GUIDE.md** for class reference
 - All 180+ classes are documented with examples
 
 ### Implementation Questions
 - Reference existing components in `frontend/src/components/`
-- Check patterns in `packages/ui/CSS_AUDIT.md`
-- Review inline comments in `activity-hub.css`
+- Check patterns in `frontend/docs/CSS_AUDIT.md`
+- Review inline comments in `frontend/src/styles/activity-hub.css`
 
 ### Issues with Hook
 - Run `./scripts/setup-git-hooks.sh` to reinstall

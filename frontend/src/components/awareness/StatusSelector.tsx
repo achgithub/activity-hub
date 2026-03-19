@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatusLevels } from '@activity-hub/core';
+import { StatusLevels } from '../../types';
 import PresenceBadge from './PresenceBadge';
 
 interface StatusSelectorProps {

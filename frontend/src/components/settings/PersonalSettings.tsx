@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppDefinition } from '@activity-hub/core';
+import { AppDefinition } from '../../types';
 
 const API_BASE = `http://${window.location.hostname}:3001/api`;
 

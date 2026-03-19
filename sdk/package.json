@@ -1,0 +1,49 @@
+{
+  "name": "@activity-hub/sdk",
+  "version": "1.0.0",
+  "description": "SDK for Activity Hub mini-apps with hooks and utilities. Includes types and React hooks.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src/types"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.45",
+    "typescript": "^4.9.5"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/activity-hub.git",
+    "directory": "sdk"
+  },
+  "keywords": [
+    "activity-hub",
+    "sdk",
+    "react",
+    "awareness",
+    "mini-apps"
+  ],
+  "author": "Activity Hub Team",
+  "license": "MIT"
+}

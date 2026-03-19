@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { AppDefinition, User } from '@activity-hub/core';
+import { AppDefinition, User } from '../types';
 import { buildAppUrl, launchApp } from '../hooks/useApps';
 
 interface AppContainerProps {

@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { UserAwareness, SessionParticipant, AwarenessEvent } from '@activity-hub/core';
+import { UserAwareness, SessionParticipant, AwarenessEvent } from './types';
 import { AwarenessClient } from './awareness';
 
 const API_BASE = `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001/api/awareness`;

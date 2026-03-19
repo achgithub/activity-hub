@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { User } from '@activity-hub/core';
+import { User } from './types';
 import LoginView from './components/LoginView';
 import Shell from './components/Shell';
 

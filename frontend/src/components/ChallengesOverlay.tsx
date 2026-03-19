@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Challenge, AppDefinition, UserPresence } from '@activity-hub/core';
+import { Challenge, AppDefinition, UserPresence } from '../types';
 import ChallengeProgress from './ChallengeProgress';
 
 interface ChallengesOverlayProps {

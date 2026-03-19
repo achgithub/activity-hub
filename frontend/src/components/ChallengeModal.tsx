@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GameConfig, GameOption, ChallengeOptions, AppDefinition } from '@activity-hub/core';
+import { GameConfig, GameOption, ChallengeOptions, AppDefinition } from '../types';
 
 interface ChallengeModalProps {
   targetUser: string;

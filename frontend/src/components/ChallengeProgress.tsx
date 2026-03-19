@@ -1,5 +1,5 @@
 import React from 'react';
-import { Challenge } from '@activity-hub/core';
+import { Challenge } from '../types';
 
 interface User {
   email: string;

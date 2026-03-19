@@ -1,25 +1,16 @@
 {
-  "name": "activity-hub-monorepo",
+  "name": "activity-hub",
   "version": "1.0.0",
   "description": "Activity Hub - Open-source pub gaming and social platform",
   "private": true,
-  "workspaces": [
-    "packages/core",
-    "packages/ui",
-    "packages/sdk",
-    "frontend"
-  ],
   "scripts": {
-    "build": "pnpm -r build",
-    "build:packages": "pnpm -r --filter '@activity-hub/*' build",
-    "build:frontend": "pnpm -F frontend build",
-    "dev": "pnpm -r --parallel dev",
-    "install": "pnpm install",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "build:frontend": "cd frontend && npm run build",
+    "build:sdk": "cd sdk && npm run build",
+    "build": "npm run build:sdk && npm run build:frontend",
+    "install:frontend": "cd frontend && npm install",
+    "install:sdk": "cd sdk && npm install"
   },
   "devDependencies": {
-    "pnpm": "^8.0.0",
     "typescript": "^4.9.5"
   }
 }

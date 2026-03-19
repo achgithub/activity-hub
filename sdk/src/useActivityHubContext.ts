@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ActivityHubContext } from '@activity-hub/core';
+import { ActivityHubContext } from './types';
 
 const API_BASE = `http://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001/api`;
 

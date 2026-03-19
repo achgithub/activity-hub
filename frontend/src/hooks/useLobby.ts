@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { LobbyState, Challenge, ChallengeOptions, GameConfig } from '@activity-hub/core';
+import { LobbyState, Challenge, ChallengeOptions, GameConfig } from '../types';
 
 const API_BASE = `http://${window.location.hostname}:3001/api`;
 

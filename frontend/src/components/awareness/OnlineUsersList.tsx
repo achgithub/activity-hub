@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserAwareness } from '@activity-hub/core';
+import { UserAwareness } from '../../types';
 import PresenceBadge from './PresenceBadge';
 
 interface OnlineUsersListProps {

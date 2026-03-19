@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppDefinition, User } from '@activity-hub/core';
+import { AppDefinition, User } from '../types';
 import PersonalSettings from './settings/PersonalSettings';
 import AdminAppRegistration from './settings/AdminAppRegistration';
 import AdminAppControl from './settings/AdminAppControl';

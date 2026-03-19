@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppDefinition, UserPresence, ChallengeOptions, GameConfig } from '@activity-hub/core';
+import { AppDefinition, UserPresence, ChallengeOptions, GameConfig } from '../types';
 import ChallengeModal from './ChallengeModal';
 import MultiPlayerChallengeModal from './MultiPlayerChallengeModal';
 import GameChallengeModal from './GameChallengeModal';

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Pre-commit hook for Activity Hub Monorepo
+# Pre-commit hook for Activity Hub
 # Enforces CSS standards and prevents styling drift
-# All UI must use @activity-hub/ui/styles/activity-hub.css and .ah-* classes
+# All UI must use frontend/src/styles/activity-hub.css and .ah-* classes
 
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
@@ -26,9 +26,9 @@ if [ ! -z "$COMPONENT_CSS" ]; then
     echo "$COMPONENT_CSS" | sed 's/^/  /'
     echo -e "${YELLOW}   Activity Hub enforces a single shared CSS file${NC}"
     echo -e "${YELLOW}   Import this in frontend/src/index.tsx:${NC}"
-    echo "   import '@activity-hub/ui/styles/activity-hub.css';"
+    echo "   import './styles/activity-hub.css';"
     echo -e "${YELLOW}   Use .ah-* classes for all styling${NC}"
-    echo -e "${YELLOW}   See packages/ui/CSS_GUIDE.md for available classes${NC}"
+    echo -e "${YELLOW}   See frontend/docs/CSS_GUIDE.md for available classes${NC}"
     ERRORS=$((ERRORS + 1))
 fi
 
@@ -40,10 +40,10 @@ echo "Checking for Activity Hub CSS import in frontend..."
 
 FRONTEND_INDEX="frontend/src/index.tsx"
 if git diff --cached --name-only | grep -q "^$FRONTEND_INDEX$"; then
-    if ! git diff --cached "$FRONTEND_INDEX" | grep -q "@activity-hub/ui/styles/activity-hub.css"; then
+    if ! git diff --cached "$FRONTEND_INDEX" | grep -q "./styles/activity-hub.css"; then
         echo -e "${RED}❌ ERROR: $FRONTEND_INDEX must import Activity Hub CSS${NC}"
         echo -e "${YELLOW}   Add this import:${NC}"
-        echo "   import '@activity-hub/ui/styles/activity-hub.css';"
+        echo "   import './styles/activity-hub.css';"
         ERRORS=$((ERRORS + 1))
     else
         echo -e "${GREEN}✓${NC} Activity Hub CSS import verified"
@@ -51,10 +51,10 @@ if git diff --cached --name-only | grep -q "^$FRONTEND_INDEX$"; then
 else
     # File not being modified, check if it exists and has the import
     if [ -f "$FRONTEND_INDEX" ]; then
-        if ! grep -q "@activity-hub/ui/styles/activity-hub.css" "$FRONTEND_INDEX"; then
+        if ! grep -q "./styles/activity-hub.css" "$FRONTEND_INDEX"; then
             echo -e "${YELLOW}⚠️  WARNING: $FRONTEND_INDEX missing Activity Hub CSS import${NC}"
             echo -e "${YELLOW}   Add this import:${NC}"
-            echo "   import '@activity-hub/ui/styles/activity-hub.css';"
+            echo "   import './styles/activity-hub.css';"
             WARNINGS=$((WARNINGS + 1))
         else
             echo -e "${GREEN}✓${NC} Activity Hub CSS import found"
@@ -106,7 +106,7 @@ for FILE in $STAGED_FILES; do
             echo "  ... (showing first 5 of $STYLE_COUNT)"
         fi
         echo -e "${YELLOW}   Use Activity Hub classes (.ah-*) instead of inline styles${NC}"
-        echo -e "${YELLOW}   See packages/ui/CSS_GUIDE.md for class reference${NC}"
+        echo -e "${YELLOW}   See frontend/docs/CSS_GUIDE.md for class reference${NC}"
         ERRORS=$((ERRORS + 1))
     fi
 done
@@ -123,7 +123,7 @@ for FILE in $STAGED_FILES; do
     if [ ! -z "$HEX_COLORS" ]; then
         echo -e "${YELLOW}⚠️  WARNING: $FILE contains hardcoded colors:${NC}"
         echo "$HEX_COLORS" | head -3 | sed 's/^/  /'
-        echo -e "${YELLOW}   Activity Hub uses standardized colors (see CSS_AUDIT.md)${NC}"
+        echo -e "${YELLOW}   Activity Hub uses standardized colors (see frontend/docs/CSS_AUDIT.md)${NC}"
         echo -e "${YELLOW}   Use .ah-* classes with built-in color values${NC}"
         WARNINGS=$((WARNINGS + 1))
     fi
@@ -160,7 +160,7 @@ for FILE in $COMPONENT_FILES; do
             if git diff --cached "$FILE" | grep -q '^+.*className='; then
                 echo -e "${YELLOW}⚠️  WARNING: $FILE may not be using Activity Hub classes${NC}"
                 echo -e "${YELLOW}   Consider using .ah-* classes for consistent styling${NC}"
-                echo -e "${YELLOW}   See packages/ui/CSS_GUIDE.md for available classes${NC}"
+                echo -e "${YELLOW}   See frontend/docs/CSS_GUIDE.md for available classes${NC}"
                 WARNINGS=$((WARNINGS + 1))
             fi
         fi

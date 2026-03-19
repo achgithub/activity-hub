@@ -10,7 +10,7 @@ import {
   AwarenessEvent,
   SessionJoinRequest,
   SessionLeaveRequest,
-} from '@activity-hub/core';
+} from './types';
 
 export class AwarenessClient {
   private baseURL: string;
