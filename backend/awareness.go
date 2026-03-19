@@ -296,8 +296,8 @@ func LeaveGameSession(ctx context.Context, appID, sessionID, userID string) erro
 
 	// Mark as in grace period
 	participant.Status = "grace_period"
-	participantData, _ = json.Marshal(participant)
-	if err := redisClient.HSet(ctx, sessionKey, userID, participantData).Err(); err != nil {
+	participantDataBytes, _ := json.Marshal(participant)
+	if err := redisClient.HSet(ctx, sessionKey, userID, string(participantDataBytes)).Err(); err != nil {
 		return err
 	}
 
@@ -366,8 +366,8 @@ func ReconnectSession(ctx context.Context, appID, sessionID, userID, displayName
 
 	// Mark as active
 	participant.Status = "active"
-	participantData, _ = json.Marshal(participant)
-	if err := redisClient.HSet(ctx, sessionKey, userID, participantData).Err(); err != nil {
+	participantDataBytes, _ := json.Marshal(participant)
+	if err := redisClient.HSet(ctx, sessionKey, userID, string(participantDataBytes)).Err(); err != nil {
 		return err
 	}
 

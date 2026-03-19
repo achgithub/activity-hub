@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/achgithub/activity-hub-auth"
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 )
@@ -71,7 +72,7 @@ func HandleGetAHRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := resolveToken(token[7:])
+	user, err := auth.ResolveToken(db, token[7:])
 	if err != nil || !isUserAdmin(user.Email) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -150,7 +151,7 @@ func HandleAssignRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admin, err := resolveToken(token[7:])
+	admin, err := auth.ResolveToken(db, token[7:])
 	if err != nil || !isUserAdmin(admin.Email) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -190,7 +191,7 @@ func HandleRevokeRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admin, err := resolveToken(token[7:])
+	admin, err := auth.ResolveToken(db, token[7:])
 	if err != nil || !isUserAdmin(admin.Email) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -228,7 +229,7 @@ func HandleGetUserRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admin, err := resolveToken(token[7:])
+	admin, err := auth.ResolveToken(db, token[7:])
 	if err != nil || !isUserAdmin(admin.Email) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
@@ -264,7 +265,7 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admin, err := resolveToken(token[7:])
+	admin, err := auth.ResolveToken(db, token[7:])
 	if err != nil || !isUserAdmin(admin.Email) {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
