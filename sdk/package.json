@@ -34,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/activity-hub.git",
+    "url": "https://github.com/achgithub/activity-hub.git",
     "directory": "sdk"
   },
   "keywords": [
