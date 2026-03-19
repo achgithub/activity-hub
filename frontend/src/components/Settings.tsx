@@ -40,6 +40,11 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
           left: '50%',
           transform: 'translate(-50%, -50%)',
           zIndex: 99999,
+          maxHeight: '90vh',
+          maxWidth: '90vw',
+          width: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -49,7 +54,13 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
         </div>
 
         {/* Tabs */}
-        <div className="ah-modal-tabs ah-flex gap-0 border-b border-gray-200">
+        <div
+          className="ah-modal-tabs ah-flex gap-0 border-b border-gray-200"
+          style={{
+            flexShrink: 0,
+            overflowX: 'auto',
+          }}
+        >
           <button
             className={`px-4 py-3 font-medium border-b-2 transition ${
               activeTab === 'personal'
@@ -110,41 +121,50 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
           )}
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'personal' && (
-          <PersonalSettings
-            apps={apps}
-            onClose={onClose}
-            onSave={onSave}
-          />
-        )}
+        {/* Tab Content - Scrollable Container */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            minHeight: 0,
+          }}
+        >
+          {activeTab === 'personal' && (
+            <PersonalSettings
+              apps={apps}
+              onClose={onClose}
+              onSave={onSave}
+            />
+          )}
 
-        {activeTab === 'registration' && isAdmin && (
-          <AdminAppRegistration
-            onClose={onClose}
-            onSave={onSave}
-          />
-        )}
+          {activeTab === 'registration' && isAdmin && (
+            <AdminAppRegistration
+              onClose={onClose}
+              onSave={onSave}
+            />
+          )}
 
-        {activeTab === 'control' && isAdmin && (
-          <AdminAppControl
-            apps={apps}
-            onClose={onClose}
-            onSave={onSave}
-          />
-        )}
+          {activeTab === 'control' && isAdmin && (
+            <AdminAppControl
+              apps={apps}
+              onClose={onClose}
+              onSave={onSave}
+            />
+          )}
 
-        {activeTab === 'users' && isAdmin && (
-          <AdminUserManagement
-            onClose={onClose}
-          />
-        )}
+          {activeTab === 'users' && isAdmin && (
+            <AdminUserManagement
+              onClose={onClose}
+            />
+          )}
 
-        {activeTab === 'roles' && isAdmin && (
-          <AdminRoleManagement
-            onClose={onClose}
-          />
-        )}
+          {activeTab === 'roles' && isAdmin && (
+            <AdminRoleManagement
+              onClose={onClose}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
