@@ -36,11 +36,11 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
         className="ah-modal ah-modal--large"
         style={{
           position: 'fixed',
-          top: '50%',
+          top: '2rem',
           left: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: 'translateX(-50%)',
           zIndex: 99999,
-          maxHeight: '90vh',
+          maxHeight: 'calc(100vh - 4rem)',
           maxWidth: '90vw',
           width: 'auto',
           display: 'flex',
