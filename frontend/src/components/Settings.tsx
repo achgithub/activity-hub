@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppDefinition, User } from '../types';
 import PersonalSettings from './settings/PersonalSettings';
 import AdminAppRegistration from './settings/AdminAppRegistration';
