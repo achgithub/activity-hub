@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { User } from '../types';
-import { useAwareness } from 'activity-hub-sdk';
+// import { useAwareness } from 'activity-hub-sdk';
 import { useLobby } from '../hooks/useLobby';
 import { useApps, buildAppUrl } from '../hooks/useApps';
 import Lobby from './Lobby';
@@ -26,7 +26,8 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   console.log('🔍 Shell received user:', user);
 
   // Initialize awareness (presence tracking)
-  const { status, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
+  // TODO: Fix SDK React hooks mismatch issue
+  // const { status, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
 
   // Fetch apps from registry
   const { apps, loading: appsLoading, refreshApps } = useApps();
