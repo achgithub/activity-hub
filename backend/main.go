@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	authlib "github.com/achgithub/activity-hub-common/auth"
+	"github.com/achgithub/activity-hub-auth"
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -392,13 +392,13 @@ func handleGetApps(w http.ResponseWriter, r *http.Request) {
 
 	// Try to get authenticated user (optional - this endpoint works without auth)
 	authHeader := r.Header.Get("Authorization")
-	var user *authlib.AuthUser
+	var user *auth.AuthUser
 	var isGuest bool
 
 	if authHeader != "" && len(authHeader) > 7 {
 		// Extract token using centralized validation
 		token := authHeader[7:] // Remove "Bearer " prefix
-		if resolvedUser, err := authlib.ResolveToken(db, token); err == nil {
+		if resolvedUser, err := auth.ResolveToken(db, token); err == nil {
 			user = resolvedUser
 			isGuest = resolvedUser.Email == "Guest" || (len(resolvedUser.Email) > 6 && resolvedUser.Email[:6] == "guest-")
 		}

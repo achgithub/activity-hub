@@ -65,7 +65,7 @@ func HandleAwarenessStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authUser, err := authlib.ResolveToken(db, token[7:])
+	authUser, err := auth.ResolveToken(db, token[7:])
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -184,7 +184,7 @@ func HandleSessionJoin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authUser, err := authlib.ResolveToken(db, token[7:])
+	authUser, err := auth.ResolveToken(db, token[7:])
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -237,7 +237,7 @@ func HandleSessionLeave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authUser, err := authlib.ResolveToken(db, token[7:])
+	authUser, err := auth.ResolveToken(db, token[7:])
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
