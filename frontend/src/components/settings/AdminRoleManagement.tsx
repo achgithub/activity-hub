@@ -94,7 +94,7 @@ const AdminRoleManagement: React.FC<AdminRoleManagementProps> = ({ onClose }) =>
     );
   }
 
-  const filteredRoles = roles.filter(r => r.type === activeTab);
+  const filteredRoles = roles.filter(r => r.type === (activeTab === 'groups' ? 'group' : 'role'));
 
   return (
     <>
