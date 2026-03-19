@@ -1,5 +1,5 @@
 {
-  "name": "@activity-hub/sdk",
+  "name": "activity-hub-sdk",
   "version": "1.0.0",
   "description": "SDK for Activity Hub mini-apps with hooks and utilities. Includes types and React hooks.",
   "main": "dist/index.js",
