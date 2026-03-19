@@ -20,19 +20,6 @@ const SessionParticipants: React.FC<SessionParticipantsProps> = ({
   const graceParticipants = participants.filter(p => p.status === 'grace_period');
   const leftParticipants = participants.filter(p => p.status === 'left');
 
-  const getStatusDisplay = (status: string) => {
-    switch (status) {
-      case 'active':
-        return '✅ In Game';
-      case 'grace_period':
-        return '⏳ Reconnecting...';
-      case 'left':
-        return '❌ Left';
-      default:
-        return status;
-    }
-  };
-
   return (
     <div className="ah-flex-col gap-4">
       {/* Active Participants */}
