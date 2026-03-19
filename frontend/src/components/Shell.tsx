@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { User } from '../types';
 import { useAwareness } from 'activity-hub-sdk';
@@ -235,8 +236,8 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
         />
       )}
 
-      {/* Settings Modal */}
-      {showSettings && (
+      {/* Settings Modal - rendered as portal to avoid stacking context issues */}
+      {showSettings && createPortal(
         <Settings
           apps={apps}
           user={user}
@@ -244,7 +245,8 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
           onSave={() => {
             refreshApps();
           }}
-        />
+        />,
+        document.body
       )}
     </div>
   );
