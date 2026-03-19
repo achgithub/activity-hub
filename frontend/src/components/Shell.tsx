@@ -106,6 +106,7 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
             </>
           )}
           <div className="ah-flex ah-flex-center gap-2">
+            {/* TODO: Re-enable when useAwareness SDK issue is fixed
             {awarenessInitialized && !user.is_guest && (
               <div className="ah-flex-center gap-1 px-2 py-1 text-sm">
                 {status === 'online' && <span>🟢</span>}
@@ -116,6 +117,7 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
                 <span className="text-xs text-gray-600 capitalize">{status}</span>
               </div>
             )}
+            */}
             <button
               className="ah-btn-outline ah-btn-sm"
               onClick={() => navigate('/profile')}
