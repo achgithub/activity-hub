@@ -26,7 +26,7 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   console.log('🔍 Shell received user:', user);
 
   // Initialize awareness (presence tracking)
-  const { status, setStatus, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
+  const { status, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
 
   // Fetch apps from registry
   const { apps, loading: appsLoading, refreshApps } = useApps();

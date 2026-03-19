@@ -4,8 +4,6 @@ import PersonalSettings from './settings/PersonalSettings';
 import AdminAppRegistration from './settings/AdminAppRegistration';
 import AdminAppControl from './settings/AdminAppControl';
 
-const API_BASE = `http://${window.location.hostname}:3001/api`;
-
 interface SettingsProps {
   apps: AppDefinition[];
   user: User;
