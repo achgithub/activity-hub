@@ -3,7 +3,7 @@ module identity-shell
 go 1.25
 
 require (
-	github.com/achgithub/activity-hub-auth v0.0.0
+	github.com/achgithub/activity-hub-auth v0.1.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.1
@@ -17,6 +17,3 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 )
-
-// Local development - replace with GitHub reference after pushing
-replace github.com/achgithub/activity-hub-auth v0.0.0 => ../activity-hub-auth
