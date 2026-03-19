@@ -1,6 +1,5 @@
 import React from 'react';
 import { StatusLevels } from '../../types';
-import PresenceBadge from './PresenceBadge';
 
 interface StatusSelectorProps {
   currentStatus: string;
