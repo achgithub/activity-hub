@@ -1,6 +1,5 @@
 import React from 'react';
 import { SessionParticipant } from '../../types';
-import PresenceBadge from './PresenceBadge';
 
 interface SessionParticipantsProps {
   participants: SessionParticipant[];
