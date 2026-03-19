@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { User } from '../types';
-import { useAwareness } from '../../../sdk/src';
+import { useAwareness } from '@activity-hub/sdk';
 import { useLobby } from '../hooks/useLobby';
 import { useApps, buildAppUrl } from '../hooks/useApps';
 import Lobby from './Lobby';
