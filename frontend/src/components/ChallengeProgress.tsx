@@ -25,7 +25,6 @@ const ChallengeProgress: React.FC<ChallengeProgressProps> = ({
   const acceptedCount = challenge.accepted?.length || 0;
   const totalInvited = challenge.playerIds?.length || 0;
   const minRequired = challenge.minPlayers || 2;
-  const progressPercent = Math.min((acceptedCount / minRequired) * 100, 100);
   const isReady = acceptedCount >= minRequired;
 
   return (
