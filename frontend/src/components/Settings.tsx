@@ -20,8 +20,29 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
   const isAdmin = user.roles?.some(r => r.startsWith('ah_')) || user.is_admin || false;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose}>
-      <div className="ah-modal ah-modal--large fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50" onClick={(e) => e.stopPropagation()}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 99999,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="ah-modal ah-modal--large"
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 99999,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="ah-modal-header ah-flex ah-flex-between">
           <h2>Settings</h2>
           <button className="ah-modal-close" onClick={onClose}>✕</button>

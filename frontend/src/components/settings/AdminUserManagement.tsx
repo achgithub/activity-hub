@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AdminUser, ActivityHubRole } from '../../types/admin';
 
 const API_BASE = `http://${window.location.hostname}:3001/api`;
@@ -414,9 +415,30 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ onClose }) =>
         )}
 
         {/* Reset Password Modal */}
-        {showResetPassword && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" onClick={() => setShowResetPassword(null)}>
-            <div className="ah-modal bg-white rounded-lg p-6 max-w-sm z-[60]" onClick={(e) => e.stopPropagation()}>
+        {showResetPassword && createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 100000,
+            }}
+            onClick={() => setShowResetPassword(null)}
+          >
+            <div
+              className="ah-modal bg-white rounded-lg p-6"
+              style={{
+                maxWidth: '24rem',
+                zIndex: 100000,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
               <h4 className="font-semibold mb-4">Reset Password: {showResetPassword}</h4>
               <form onSubmit={handleResetPassword}>
                 <div className="mb-4">
@@ -452,7 +474,8 @@ const AdminUserManagement: React.FC<AdminUserManagementProps> = ({ onClose }) =>
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
 
