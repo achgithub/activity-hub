@@ -10,7 +10,8 @@ build/
 
 # Frontend build
 frontend/build/
-frontend/public/
+frontend/public/*
+!frontend/public/index.html
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
