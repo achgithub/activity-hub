@@ -14,10 +14,10 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps, onClose, onSave
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Initialize app states from current apps
+    // Initialize app states - all apps start as enabled
     const states = new Map<string, boolean>();
     apps.forEach(app => {
-      states.set(app.id, app.enabled !== false);
+      states.set(app.id, true);
     });
     setAppStates(states);
   }, [apps]);
