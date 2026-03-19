@@ -82,11 +82,10 @@ const (
 
 // Timing Constants
 const (
-	PresenceTTL         = 45 * time.Second
-	HeartbeatInterval   = 20 * time.Second
-	GracePeriod         = 30 * time.Second
-	SessionTTL          = 1 * time.Hour
-	HealthCheckInterval = 30 * time.Second
+	PresenceTTL       = 45 * time.Second
+	HeartbeatInterval = 20 * time.Second
+	GracePeriod       = 30 * time.Second
+	SessionTTL        = 1 * time.Hour
 )
 
 // SSEBroadcaster manages in-memory pub/sub for SSE streams
@@ -113,7 +112,7 @@ func (b *SSEBroadcaster) Subscribe(channelID string) <-chan AwarenessEvent {
 }
 
 // Unsubscribe removes a subscription channel
-func (b *SSEBroadcaster) Unsubscribe(channelID string, ch chan AwarenessEvent) {
+func (b *SSEBroadcaster) Unsubscribe(channelID string, ch <-chan AwarenessEvent) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
@@ -122,7 +121,7 @@ func (b *SSEBroadcaster) Unsubscribe(channelID string, ch chan AwarenessEvent) {
 			if sub == ch {
 				// Remove the channel from subscribers
 				b.subscribers[channelID] = append(subs[:i], subs[i+1:]...)
-				close(ch)
+				close(sub)
 				break
 			}
 		}

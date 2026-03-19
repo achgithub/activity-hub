@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/achgithub/activity-hub-auth"
 	"github.com/gorilla/mux"
 )
 

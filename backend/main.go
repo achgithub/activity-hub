@@ -147,7 +147,6 @@ func main() {
 	api.HandleFunc("/user/context", HandleGetUserContext).Methods("GET")
 
 	// Admin endpoints for roles
-	admin := r.PathPrefix("/api/admin").Subrouter()
 	admin.HandleFunc("/roles", HandleGetAHRoles).Methods("GET")
 	admin.HandleFunc("/users/{email}/roles", HandleGetUserRoles).Methods("GET")
 	admin.HandleFunc("/users/{email}/roles/{role}", HandleAssignRole).Methods("POST")

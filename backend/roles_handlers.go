@@ -19,7 +19,7 @@ func HandleGetUserContext(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := authHeader[7:] // Remove "Bearer " prefix
-	user, err := resolveToken(token)
+	user, err := auth.ResolveToken(db, token)
 	if err != nil {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
