@@ -5,3 +5,4 @@
 
 export { AwarenessClient } from './awareness';
 export { useAwareness, useSessionAwareness, useSSE } from './useAwareness';
+export { useActivityHubContext } from './useActivityHubContext';

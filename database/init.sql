@@ -223,6 +223,117 @@ CREATE INDEX idx_awareness_session ON awareness_events(app_id, session_id, creat
 -- DELETE FROM awareness_events WHERE created_at < NOW() - INTERVAL '30 days';
 
 -- ============================================================================
+-- TABLE 8: AH_GROUPS
+-- ============================================================================
+-- Activity Hub groups - collections that grant sets of permissions
+-- Groups follow convention: ah_g_* (ah_g_super, ah_g_admin, ah_g_user_admin, etc.)
+CREATE TABLE IF NOT EXISTS ah_groups (
+    id VARCHAR(255) PRIMARY KEY,           -- 'ah_g_super', 'ah_g_admin', etc.
+    name VARCHAR(255) NOT NULL,            -- Display name
+    description TEXT,                      -- What this group grants
+    is_system BOOLEAN DEFAULT FALSE,       -- System group (can't be deleted)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_ah_groups_system ON ah_groups(is_system);
+
+-- ============================================================================
+-- TABLE 9: AH_ROLES
+-- ============================================================================
+-- Activity Hub roles - granular permissions for the platform
+-- Roles follow convention: ah_r_* (ah_r_app_register, ah_r_app_control, etc.)
+CREATE TABLE IF NOT EXISTS ah_roles (
+    id VARCHAR(255) PRIMARY KEY,           -- 'ah_r_app_register', etc.
+    name VARCHAR(255) NOT NULL,            -- Display name
+    description TEXT,                      -- What this role allows
+    is_system BOOLEAN DEFAULT FALSE,       -- System role (can't be deleted)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_ah_roles_system ON ah_roles(is_system);
+
+-- ============================================================================
+-- TABLE 10: AH_GROUP_ROLES
+-- ============================================================================
+-- Mapping of groups to roles - groups grant multiple roles
+-- Example: ah_g_admin group grants ah_r_app_register, ah_r_app_control roles
+CREATE TABLE IF NOT EXISTS ah_group_roles (
+    group_id VARCHAR(255) NOT NULL,
+    role_id VARCHAR(255) NOT NULL,
+    PRIMARY KEY (group_id, role_id),
+    FOREIGN KEY (group_id) REFERENCES ah_groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES ah_roles(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ah_group_roles_group ON ah_group_roles(group_id);
+CREATE INDEX idx_ah_group_roles_role ON ah_group_roles(role_id);
+
+-- ============================================================================
+-- TABLE 11: USER_ROLES
+-- ============================================================================
+-- User role assignments - who has what roles/groups
+-- Roles can be:
+--   - Activity Hub roles: 'ah_r_app_register', 'ah_r_app_control', etc.
+--   - Activity Hub groups: 'ah_g_admin', 'ah_g_super', etc.
+--   - App-specific roles: 'chess:admin', 'racing:player', 'leaderboard:guest', etc.
+CREATE TABLE IF NOT EXISTS user_roles (
+    id SERIAL PRIMARY KEY,
+    user_email VARCHAR(255) NOT NULL,
+    role_id VARCHAR(255) NOT NULL,        -- Can be ah_r_*, ah_g_*, or app:role
+    assigned_by VARCHAR(255),              -- Admin email who assigned this
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,                            -- Optional notes about assignment
+    UNIQUE(user_email, role_id),
+    FOREIGN KEY (user_email) REFERENCES users(email) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_roles_email ON user_roles(user_email);
+CREATE INDEX idx_user_roles_role ON user_roles(role_id);
+CREATE INDEX idx_user_roles_assigned_at ON user_roles(assigned_at DESC);
+
+-- ============================================================================
+-- TABLE 12: APP_ROLES
+-- ============================================================================
+-- App-specific roles defined in app manifest
+-- Auto-created when app is registered with manifest
+-- Example: chess:admin, chess:player, leaderboard:guest
+CREATE TABLE IF NOT EXISTS app_roles (
+    id SERIAL PRIMARY KEY,
+    app_id VARCHAR(255) NOT NULL,         -- 'chess', 'racing', 'leaderboard'
+    role_id VARCHAR(255) NOT NULL,        -- 'chess:admin', 'chess:player'
+    label VARCHAR(255),                   -- Display name: 'Tournament Admin'
+    description TEXT,                     -- 'Manage tournaments, ban players'
+    is_default BOOLEAN DEFAULT FALSE,     -- Assigned to all users by default
+    is_restricted BOOLEAN DEFAULT FALSE,  -- Can't be self-assigned
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(app_id, role_id),
+    FOREIGN KEY (app_id) REFERENCES applications(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_app_roles_app ON app_roles(app_id);
+CREATE INDEX idx_app_roles_role ON app_roles(role_id);
+CREATE INDEX idx_app_roles_default ON app_roles(app_id, is_default);
+
+-- ============================================================================
+-- TABLE 13: APP_MANIFESTS
+-- ============================================================================
+-- History of app manifest registrations
+-- Tracks what roles each app version declared
+CREATE TABLE IF NOT EXISTS app_manifests (
+    id SERIAL PRIMARY KEY,
+    app_id VARCHAR(255) NOT NULL,
+    manifest_json JSONB NOT NULL,         -- Full manifest including roles array
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    registered_by VARCHAR(255),           -- Admin email
+    is_current BOOLEAN DEFAULT TRUE,      -- Is this the active manifest?
+    FOREIGN KEY (app_id) REFERENCES applications(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_app_manifests_app ON app_manifests(app_id);
+CREATE INDEX idx_app_manifests_current ON app_manifests(app_id, is_current);
+CREATE INDEX idx_app_manifests_registered_at ON app_manifests(registered_at DESC);
+
+-- ============================================================================
 -- BOOTSTRAP DATA
 -- ============================================================================
 -- Initial user accounts and app definitions for fresh installation
@@ -261,6 +372,43 @@ INSERT INTO applications (id, name, icon, type, description, category, realtime,
     ('quiz-master', 'Quiz Master', '🎤', 'utility', 'Quiz host controls', 'utility', 'sse', 1, NULL, TRUE, 104),
     ('quiz-display', 'Quiz Display', '📺', 'utility', 'Quiz TV display system', 'utility', 'sse', 1, NULL, TRUE, 105)
 ON CONFLICT (id) DO NOTHING;
+
+-- Insert Activity Hub groups
+INSERT INTO ah_groups (id, name, description, is_system) VALUES
+    ('ah_g_super', 'Super Admin', 'Full system access - everything', TRUE),
+    ('ah_g_admin', 'App Admin', 'Register, edit, enable/disable apps', TRUE),
+    ('ah_g_user_admin', 'User Admin', 'Manage users, assign roles', TRUE),
+    ('ah_g_read', 'Read Only', 'View apps and settings, no modifications', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert Activity Hub roles
+INSERT INTO ah_roles (id, name, description, is_system) VALUES
+    ('ah_r_app_register', 'Register Apps', 'Can register new mini-apps', TRUE),
+    ('ah_r_app_edit', 'Edit Apps', 'Can modify app metadata and settings', TRUE),
+    ('ah_r_app_control', 'Control Apps', 'Can enable/disable apps for all users', TRUE),
+    ('ah_r_user_manage', 'Manage Users', 'Can assign roles and groups to users', TRUE),
+    ('ah_r_user_read', 'View Users', 'Can view user list and details', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+-- Map groups to roles
+INSERT INTO ah_group_roles (group_id, role_id) VALUES
+    ('ah_g_super', 'ah_r_app_register'),
+    ('ah_g_super', 'ah_r_app_edit'),
+    ('ah_g_super', 'ah_r_app_control'),
+    ('ah_g_super', 'ah_r_user_manage'),
+    ('ah_g_super', 'ah_r_user_read'),
+    ('ah_g_admin', 'ah_r_app_register'),
+    ('ah_g_admin', 'ah_r_app_edit'),
+    ('ah_g_admin', 'ah_r_app_control'),
+    ('ah_g_user_admin', 'ah_r_user_manage'),
+    ('ah_g_user_admin', 'ah_r_user_read'),
+    ('ah_g_read', 'ah_r_user_read')
+ON CONFLICT (group_id, role_id) DO NOTHING;
+
+-- Assign bootstrap admin to super group
+INSERT INTO user_roles (user_email, role_id, assigned_by, notes) VALUES
+    ('admin@activity-hub.com', 'ah_g_super', 'system', 'Bootstrap super admin')
+ON CONFLICT (user_email, role_id) DO NOTHING;
 
 -- ============================================================================
 -- HELPER FUNCTIONS (Optional - for maintenance)
@@ -303,18 +451,21 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 -- SCHEMA COMPLETE
 -- ============================================================================
--- All 9 tables created with proper constraints, foreign keys, and indexes
--- Bootstrap admin user inserted, ready for self-registration
+-- All 13 tables created with proper constraints, foreign keys, and indexes
+-- Bootstrap admin user inserted with super admin group
+-- Activity Hub groups and roles initialized
 -- Helper functions for maintenance ready to use
 --
 -- Usage on Pi:
 --   psql -d activity_hub < /path/to/init.sql
 --
 -- This creates:
--- - 9 tables (users, applications, user_app_preferences, challenges,
+-- - 13 tables (users, applications, user_app_preferences, challenges,
 --   impersonation_sessions, email_verifications, password_resets,
---   app_lifecycle_events, awareness_events)
--- - 24+ indexes for optimal query performance
+--   app_lifecycle_events, awareness_events, ah_groups, ah_roles,
+--   ah_group_roles, user_roles, app_roles, app_manifests)
+-- - 30+ indexes for optimal query performance
 -- - Foreign key constraints for referential integrity
+-- - Bootstrap groups and roles for Activity Hub platform
 -- - Helper functions for maintenance
 -- - Bootstrap admin user (admin@activity-hub.com / 123456)

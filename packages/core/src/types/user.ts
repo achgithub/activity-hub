@@ -9,6 +9,7 @@ export interface User {
   impersonating?: boolean;
   superUser?: string; // Original super_user email
   is_guest?: boolean; // True for guest users
+  roles?: string[]; // User's assigned roles and groups (ah_r_*, ah_g_*, app:role)
 }
 
 export interface AuthResponse {

@@ -239,6 +239,7 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
       {showSettings && (
         <Settings
           apps={apps}
+          user={user}
           onClose={() => setShowSettings(false)}
           onSave={() => {
             refreshApps();

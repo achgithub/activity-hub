@@ -1,235 +1,94 @@
 import React, { useState, useEffect } from 'react';
-import { AppDefinition } from '@activity-hub/core';
+import { AppDefinition, User } from '@activity-hub/core';
+import PersonalSettings from './settings/PersonalSettings';
+import AdminAppRegistration from './settings/AdminAppRegistration';
+import AdminAppControl from './settings/AdminAppControl';
 
 const API_BASE = `http://${window.location.hostname}:3001/api`;
 
 interface SettingsProps {
   apps: AppDefinition[];
+  user: User;
   onClose: () => void;
   onSave: () => void;
 }
 
-interface AppPreference {
-  appId: string;
-  isHidden: boolean;
-  isFavorite: boolean;
-  customOrder: number | null;
-}
+const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
+  const [activeTab, setActiveTab] = useState<'personal' | 'registration' | 'control'>('personal');
 
-const Settings: React.FC<SettingsProps> = ({ apps, onClose, onSave }) => {
-  const [appPreferences, setAppPreferences] = useState<AppPreference[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    fetchPreferences();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchPreferences = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_BASE}/user/preferences`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-
-      // Build preference map from existing preferences
-      const prefsMap = new Map<string, AppPreference>();
-      if (data.preferences) {
-        data.preferences.forEach((pref: any) => {
-          prefsMap.set(pref.appId, {
-            appId: pref.appId,
-            isHidden: pref.isHidden,
-            isFavorite: pref.isFavorite || false,
-            customOrder: pref.customOrder
-          });
-        });
-      }
-
-      // Create preferences for all apps (use existing or defaults), exclude lobby
-      const allPrefs = apps
-        .filter(app => app.id !== 'lobby')
-        .map((app) => {
-          const existing = prefsMap.get(app.id);
-          return {
-            appId: app.id,
-            isHidden: existing?.isHidden || false,
-            isFavorite: existing?.isFavorite || false,
-            customOrder: existing?.customOrder !== null && existing?.customOrder !== undefined
-              ? existing.customOrder
-              : (app.displayOrder ?? null)
-          };
-        });
-
-      // Sort by custom order
-      allPrefs.sort((a, b) => {
-        const aOrder = (a.customOrder !== null && a.customOrder !== undefined) ? a.customOrder : 999;
-        const bOrder = (b.customOrder !== null && b.customOrder !== undefined) ? b.customOrder : 999;
-        return aOrder - bOrder;
-      });
-
-      setAppPreferences(allPrefs);
-    } catch (error) {
-      console.error('Failed to fetch preferences:', error);
-    }
-    setLoading(false);
-  };
-
-  const handleToggleVisibility = (appId: string) => {
-    setAppPreferences(prefs =>
-      prefs.map(p => p.appId === appId ? { ...p, isHidden: !p.isHidden } : p)
-    );
-  };
-
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-
-    setAppPreferences(prefs => {
-      const newPrefs = [...prefs];
-      [newPrefs[index - 1], newPrefs[index]] = [newPrefs[index], newPrefs[index - 1]];
-      // Reassign custom orders based on new positions
-      return newPrefs.map((p, i) => ({ ...p, customOrder: i * 10 }));
-    });
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index === appPreferences.length - 1) return;
-
-    setAppPreferences(prefs => {
-      const newPrefs = [...prefs];
-      [newPrefs[index], newPrefs[index + 1]] = [newPrefs[index + 1], newPrefs[index]];
-      // Reassign custom orders based on new positions
-      return newPrefs.map((p, i) => ({ ...p, customOrder: i * 10 }));
-    });
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${API_BASE}/user/preferences`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ preferences: appPreferences })
-      });
-
-      if (response.ok) {
-        onSave(); // Refresh apps
-        onClose();
-      } else {
-        alert('Failed to save preferences');
-      }
-    } catch (error) {
-      console.error('Failed to save preferences:', error);
-      alert('Failed to save preferences');
-    }
-    setSaving(false);
-  };
-
-  const handleReset = () => {
-    if (!window.confirm('Reset all app settings to default? This will unhide all apps and restore original order.')) {
-      return;
-    }
-
-    // Reset to defaults
-    const resetPrefs = apps
-      .filter(app => app.id !== 'lobby')
-      .map((app, index) => ({
-        appId: app.id,
-        isHidden: false,
-        isFavorite: false,
-        customOrder: app.displayOrder ?? index * 10
-      }));
-
-    // Sort by display order
-    resetPrefs.sort((a, b) => {
-      const aOrder = (a.customOrder !== null && a.customOrder !== undefined) ? a.customOrder : 999;
-      const bOrder = (b.customOrder !== null && b.customOrder !== undefined) ? b.customOrder : 999;
-      return aOrder - bOrder;
-    });
-
-    setAppPreferences(resetPrefs);
-  };
-
-  const getAppName = (appId: string) => {
-    const app = apps.find(a => a.id === appId);
-    return app ? `${app.icon} ${app.name}` : appId;
-  };
+  // Check if user is admin
+  const isAdmin = user.roles?.some(r => r.startsWith('ah_')) || user.is_admin || false;
 
   return (
     <div className="fixed inset-0 bg-black/50" onClick={onClose}>
       <div className="ah-modal ah-modal--large fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" onClick={(e) => e.stopPropagation()}>
         <div className="ah-modal-header ah-flex ah-flex-between">
-          <h2>App Settings</h2>
+          <h2>Settings</h2>
           <button className="ah-modal-close" onClick={onClose}>✕</button>
         </div>
 
-        {loading ? (
-          <div className="ah-modal-body text-center py-8">Loading preferences...</div>
-        ) : (
-          <>
-            <div className="ah-modal-body">
-              <p className="text-gray-600 mb-6">
-                Show/hide apps and reorder them to customize your experience.
-              </p>
-              <div className="ah-list">
-                {appPreferences.map((pref, index) => (
-                  <div key={pref.appId} className="ah-list-item ah-flex ah-flex-between">
-                    <label className="ah-flex ah-flex-center gap-3 flex-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!pref.isHidden}
-                        onChange={() => handleToggleVisibility(pref.appId)}
-                      />
-                      <span className={pref.isHidden ? 'text-gray-400' : 'text-gray-900'}>
-                        {getAppName(pref.appId)}
-                      </span>
-                    </label>
-                    <div className="ah-flex gap-1">
-                      <button
-                        className="ah-btn-outline ah-btn-sm"
-                        onClick={() => handleMoveUp(index)}
-                        disabled={index === 0}
-                        title="Move up"
-                      >
-                        ▲
-                      </button>
-                      <button
-                        className="ah-btn-outline ah-btn-sm"
-                        onClick={() => handleMoveDown(index)}
-                        disabled={index === appPreferences.length - 1}
-                        title="Move down"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Tabs */}
+        <div className="ah-modal-tabs ah-flex gap-0 border-b border-gray-200">
+          <button
+            className={`px-4 py-3 font-medium border-b-2 transition ${
+              activeTab === 'personal'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+            onClick={() => setActiveTab('personal')}
+          >
+            Personal Settings
+          </button>
 
-            <div className="ah-modal-footer ah-flex ah-flex-between">
-              <button className="ah-btn-danger" onClick={handleReset}>
-                Reset to Default
+          {isAdmin && (
+            <>
+              <button
+                className={`px-4 py-3 font-medium border-b-2 transition ${
+                  activeTab === 'registration'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+                onClick={() => setActiveTab('registration')}
+              >
+                App Registration
               </button>
-              <div className="ah-flex gap-2">
-                <button className="ah-btn-outline" onClick={onClose}>
-                  Cancel
-                </button>
-                <button className="ah-btn-primary" onClick={handleSave} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          </>
+
+              <button
+                className={`px-4 py-3 font-medium border-b-2 transition ${
+                  activeTab === 'control'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+                onClick={() => setActiveTab('control')}
+              >
+                App Control
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'personal' && (
+          <PersonalSettings
+            apps={apps}
+            onClose={onClose}
+            onSave={onSave}
+          />
+        )}
+
+        {activeTab === 'registration' && isAdmin && (
+          <AdminAppRegistration
+            onClose={onClose}
+            onSave={onSave}
+          />
+        )}
+
+        {activeTab === 'control' && isAdmin && (
+          <AdminAppControl
+            apps={apps}
+            onClose={onClose}
+            onSave={onSave}
+          />
         )}
       </div>
     </div>
