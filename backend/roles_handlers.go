@@ -338,6 +338,69 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandleGetUsers - GET /api/admin/users
+// List all users with their assigned roles
+func HandleGetUsers(w http.ResponseWriter, r *http.Request) {
+	// Check admin permission
+	token := r.Header.Get("Authorization")
+	if token == "" || len(token) <= 7 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := auth.ResolveToken(db, token[7:])
+	if err != nil || !isUserAdmin(user.Email) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Query all users with their roles
+	rows, err := db.Query(`
+		SELECT
+			u.email,
+			u.name,
+			u.email_verified,
+			u.created_at,
+			COALESCE(array_agg(ur.role_id) FILTER (WHERE ur.role_id IS NOT NULL), '{}') as roles
+		FROM users u
+		LEFT JOIN user_roles ur ON u.email = ur.user_email
+		GROUP BY u.email, u.name, u.email_verified, u.created_at
+		ORDER BY u.created_at DESC
+	`)
+	if err != nil {
+		log.Printf("Failed to fetch users: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type UserInfo struct {
+		Email         string   `json:"email"`
+		Name          string   `json:"name"`
+		Roles         []string `json:"roles"`
+		EmailVerified bool     `json:"email_verified"`
+		CreatedAt     string   `json:"created_at"`
+	}
+
+	var users []UserInfo
+	for rows.Next() {
+		var user UserInfo
+		var roles pq.StringArray
+		err := rows.Scan(&user.Email, &user.Name, &user.EmailVerified, &user.CreatedAt, &roles)
+		if err != nil {
+			log.Printf("Failed to scan user: %v", err)
+			continue
+		}
+		user.Roles = roles
+		users = append(users, user)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"users": users,
+	})
+}
+
 // isUserAdmin checks if user has admin permissions
 func isUserAdmin(email string) bool {
 	var hasAdmin bool

@@ -3,6 +3,7 @@ import { AppDefinition, User } from '../types';
 import PersonalSettings from './settings/PersonalSettings';
 import AdminAppRegistration from './settings/AdminAppRegistration';
 import AdminAppControl from './settings/AdminAppControl';
+import AdminUserManagement from './settings/AdminUserManagement';
 
 interface SettingsProps {
   apps: AppDefinition[];
@@ -12,7 +13,7 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
-  const [activeTab, setActiveTab] = useState<'personal' | 'registration' | 'control'>('personal');
+  const [activeTab, setActiveTab] = useState<'personal' | 'registration' | 'control' | 'users'>('personal');
 
   // Check if user is admin
   const isAdmin = user.roles?.some(r => r.startsWith('ah_')) || user.is_admin || false;
@@ -61,6 +62,17 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
               >
                 App Control
               </button>
+
+              <button
+                className={`px-4 py-3 font-medium border-b-2 transition ${
+                  activeTab === 'users'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+                onClick={() => setActiveTab('users')}
+              >
+                User Management
+              </button>
             </>
           )}
         </div>
@@ -86,6 +98,12 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
             apps={apps}
             onClose={onClose}
             onSave={onSave}
+          />
+        )}
+
+        {activeTab === 'users' && isAdmin && (
+          <AdminUserManagement
+            onClose={onClose}
           />
         )}
       </div>
