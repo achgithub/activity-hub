@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppDefinition } from '../../types';
 
 const API_BASE = `http://${window.location.hostname}:3001/api`;
@@ -21,11 +21,7 @@ const PersonalSettings: React.FC<PersonalSettingsProps> = ({ apps, onClose, onSa
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchPreferences();
-  }, []);
-
-  const fetchPreferences = async () => {
+  const fetchPreferences = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) return;
 
@@ -72,7 +68,11 @@ const PersonalSettings: React.FC<PersonalSettingsProps> = ({ apps, onClose, onSa
       console.error('Failed to fetch preferences:', error);
     }
     setLoading(false);
-  };
+  }, [apps]);
+
+  useEffect(() => {
+    fetchPreferences();
+  }, [fetchPreferences]);
 
   const handleToggleVisibility = (appId: string) => {
     setAppPreferences(prefs =>
