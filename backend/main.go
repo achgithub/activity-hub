@@ -26,7 +26,7 @@ func main() {
 
 	// Get database connection string from environment or use default
 	dbHost := getEnv("DB_HOST", "127.0.0.1") // Use TCP/IP for password auth
-	dbPort := getEnv("DB_PORT", "5555")      // Pi uses port 5555
+	dbPort := getEnv("DB_PORT", "5432")      // Standard PostgreSQL port
 	dbUser := getEnv("DB_USER", "activityhub")
 	dbPass := getEnv("DB_PASS", "pubgames")
 	dbName := getEnv("DB_NAME", "activity_hub")
