@@ -100,7 +100,8 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 	os.Remove(socketPath)
 
 	// Build command - look for compiled binary in ./apps/{appId}/backend/
-	binaryPath := fmt.Sprintf("./apps/%s/backend/%s-app", appID, appID)
+	// Use just the binary name since cmd.Dir will be set to the backend directory
+	binaryPath := fmt.Sprintf("%s-app", appID)
 	cmd := exec.Command(binaryPath)
 
 	// Set environment variables
@@ -109,7 +110,7 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 		fmt.Sprintf("SOCKET_PATH=%s", socketPath),
 		"ACTIVITY_HUB_URL=http://localhost:3000",
 		"DB_HOST=127.0.0.1",
-		"DB_PORT=5555",
+		"DB_PORT=5432",
 		"DB_USER=activityhub",
 		"DB_PASS=pubgames",
 		"REDIS_HOST=127.0.0.1",
