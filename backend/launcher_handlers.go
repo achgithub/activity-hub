@@ -70,8 +70,11 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 			DialContext: func(ctx, network, addr string) (net.Conn, error) {
 				return net.Dial("unix", socketPath)
 			},
+			MaxIdleConns:        1,
+			MaxIdleConnsPerHost: 1,
+			DisableKeepAlives:   false,
 		},
-		Timeout: 30 * time.Second,
+		// No timeout for streaming responses
 	}
 	defer client.CloseIdleConnections()
 
@@ -81,7 +84,7 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 		url += "?" + r.URL.RawQuery  // Preserve query parameters (including token)
 	}
 
-	proxyReq, err := http.NewRequest(r.Method, url, r.Body)
+	proxyReq, err := http.NewRequestWithContext(r.Context(), r.Method, url, r.Body)
 	if err != nil {
 		log.Printf("Failed to create proxy request: %v", err)
 		w.WriteHeader(http.StatusBadGateway)
@@ -90,6 +93,9 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 
 	// Copy headers from original request
 	proxyReq.Header = r.Header.Clone()
+
+	// Log for debugging
+	log.Printf("Proxy request to %s via socket %s", url, socketPath)
 
 	// Send request to app
 	resp, err := client.Do(proxyReq)
