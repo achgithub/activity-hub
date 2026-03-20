@@ -74,6 +74,7 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 	proxyReq.URL.Path = targetPath
 	proxyReq.URL.Scheme = "http"
 	proxyReq.URL.Host = "unix"
+	proxyReq.URL.RawQuery = r.URL.RawQuery  // Preserve query parameters (including token)
 	proxyReq.RequestURI = ""
 
 	// Send request through Unix socket
