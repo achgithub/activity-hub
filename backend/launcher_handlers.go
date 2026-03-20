@@ -120,9 +120,12 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 	// Set status code
 	w.WriteHeader(resp.StatusCode)
 
-	// Stream response body
-	if _, err := io.Copy(w, resp.Body); err != nil {
-		log.Printf("Error copying response body for app %s: %v", appID, err)
+	// Stream response body with detailed error logging
+	copied, err := io.Copy(w, resp.Body)
+	if err != nil {
+		log.Printf("Error copying response body for app %s after %d bytes: %v", appID, copied, err)
+	} else {
+		log.Printf("Successfully copied %d bytes for app %s", copied, appID)
 	}
 
 	// Update activity timestamp
