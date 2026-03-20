@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -99,20 +100,31 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 		return fmt.Errorf("app %s missing binary_path or static_path configuration", appID)
 	}
 
+	// Convert relative paths to absolute paths
+	binaryPath, err := filepath.Abs(app.BinaryPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve binary path: %w", err)
+	}
+
+	staticPath, err := filepath.Abs(app.StaticPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve static path: %w", err)
+	}
+
 	// Build socket path
 	socketPath := fmt.Sprintf("%s/%s%s.sock", SocketDir, SocketPrefix, appID)
 
 	// Remove old socket if exists
 	os.Remove(socketPath)
 
-	// Create command with the configured binary path
-	cmd := exec.Command(app.BinaryPath)
+	// Create command with the resolved absolute binary path
+	cmd := exec.Command(binaryPath)
 
-	// Set environment variables
+	// Set environment variables with resolved absolute paths
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("APP_ID=%s", appID),
 		fmt.Sprintf("SOCKET_PATH=%s", socketPath),
-		fmt.Sprintf("STATIC_PATH=%s", app.StaticPath),
+		fmt.Sprintf("STATIC_PATH=%s", staticPath),
 		"ACTIVITY_HUB_URL=http://localhost:3000",
 		"DB_HOST=127.0.0.1",
 		"DB_PORT=5432",
@@ -127,10 +139,9 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("GAME_ID=%s", gameID))
 	}
 
-	// Extract directory from binary path and set as working directory
-	// This allows the binary to be in any location
-	if idx := strings.LastIndex(app.BinaryPath, "/"); idx >= 0 {
-		cmd.Dir = app.BinaryPath[:idx]
+	// Extract directory from resolved binary path and set as working directory
+	if idx := strings.LastIndex(binaryPath, "/"); idx >= 0 {
+		cmd.Dir = binaryPath[:idx]
 	}
 
 	// Capture logs
