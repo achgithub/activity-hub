@@ -42,7 +42,17 @@ export function useActivityHubContext(): ActivityHubContext {
   useEffect(() => {
     const fetchContext = async () => {
       try {
-        const token = localStorage.getItem('token');
+        // Try to get token from multiple sources:
+        // 1. localStorage (standalone mode or Activity Hub main shell)
+        // 2. URL query parameter (mini-app mode - passed by Activity Hub)
+        let token = localStorage.getItem('token');
+
+        if (!token && typeof window !== 'undefined') {
+          // Extract token from URL query parameter for mini-app mode
+          const params = new URLSearchParams(window.location.search);
+          token = params.get('token');
+        }
+
         if (!token) {
           setError('No authentication token found');
           setLoading(false);
