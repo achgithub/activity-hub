@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
@@ -93,21 +94,25 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 		return fmt.Errorf("app not found: %s", appID)
 	}
 
+	// Validate that app has paths configured
+	if app.BinaryPath == "" || app.StaticPath == "" {
+		return fmt.Errorf("app %s missing binary_path or static_path configuration", appID)
+	}
+
 	// Build socket path
 	socketPath := fmt.Sprintf("%s/%s%s.sock", SocketDir, SocketPrefix, appID)
 
 	// Remove old socket if exists
 	os.Remove(socketPath)
 
-	// Build command - look for compiled binary in ./apps/{appId}/backend/
-	// Use relative path from the backend directory
-	binaryPath := fmt.Sprintf("./%s-app", appID)
-	cmd := exec.Command(binaryPath)
+	// Create command with the configured binary path
+	cmd := exec.Command(app.BinaryPath)
 
 	// Set environment variables
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("APP_ID=%s", appID),
 		fmt.Sprintf("SOCKET_PATH=%s", socketPath),
+		fmt.Sprintf("STATIC_PATH=%s", app.StaticPath),
 		"ACTIVITY_HUB_URL=http://localhost:3000",
 		"DB_HOST=127.0.0.1",
 		"DB_PORT=5432",
@@ -122,8 +127,11 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("GAME_ID=%s", gameID))
 	}
 
-	// Set working directory
-	cmd.Dir = fmt.Sprintf("./apps/%s/backend", appID)
+	// Extract directory from binary path and set as working directory
+	// This allows the binary to be in any location
+	if idx := strings.LastIndex(app.BinaryPath, "/"); idx >= 0 {
+		cmd.Dir = app.BinaryPath[:idx]
+	}
 
 	// Capture logs
 	cmd.Stdout = os.Stdout

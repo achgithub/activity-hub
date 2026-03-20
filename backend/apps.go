@@ -22,6 +22,8 @@ type AppDefinition struct {
 	MinPlayers      *int     `json:"minPlayers,omitempty"`
 	MaxPlayers      *int     `json:"maxPlayers,omitempty"`
 	RequiredRoles   []string `json:"requiredRoles,omitempty"`
+	BinaryPath      string   `json:"binaryPath,omitempty"`
+	StaticPath      string   `json:"staticPath,omitempty"`
 	Enabled         bool     `json:"enabled"`
 	DisplayOrder    int      `json:"displayOrder"`
 	GuestAccessible bool     `json:"guestAccessible,omitempty"`
@@ -46,7 +48,8 @@ func LoadAppRegistry() error {
 		       COALESCE(url, ''), COALESCE(backend_port, 0), COALESCE(realtime, 'none'),
 		       min_players, max_players,
 		       COALESCE(required_roles, '{}'), enabled, display_order,
-		       COALESCE(guest_accessible, FALSE)
+		       COALESCE(guest_accessible, FALSE),
+		       COALESCE(binary_path, ''), COALESCE(static_path, '')
 		FROM applications
 		WHERE enabled = TRUE
 		ORDER BY display_order, name
@@ -68,6 +71,7 @@ func LoadAppRegistry() error {
 			&minPlayers, &maxPlayers,
 			&requiredRoles, &app.Enabled, &app.DisplayOrder,
 			&app.GuestAccessible,
+			&app.BinaryPath, &app.StaticPath,
 		)
 		if err != nil {
 			return err

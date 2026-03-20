@@ -282,6 +282,8 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 		Realtime    string                   `json:"realtime"`
 		MinPlayers  int                      `json:"minPlayers"`
 		MaxPlayers  int                      `json:"maxPlayers"`
+		BinaryPath  string                   `json:"binaryPath"`
+		StaticPath  string                   `json:"staticPath"`
 		Roles       []map[string]interface{} `json:"roles"`
 	}
 
@@ -292,16 +294,18 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 
 	// Insert application
 	_, err = db.Exec(`
-		INSERT INTO applications (id, name, icon, category, description, realtime, min_players, max_players, enabled, display_order, type)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, 999, $9)
+		INSERT INTO applications (id, name, icon, category, description, realtime, min_players, max_players, binary_path, static_path, enabled, display_order, type)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE, 999, $11)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
 			icon = EXCLUDED.icon,
 			description = EXCLUDED.description,
 			realtime = EXCLUDED.realtime,
 			min_players = EXCLUDED.min_players,
-			max_players = EXCLUDED.max_players
-	`, req.Id, req.Name, req.Icon, req.Category, req.Description, req.Realtime, req.MinPlayers, req.MaxPlayers, req.Category)
+			max_players = EXCLUDED.max_players,
+			binary_path = EXCLUDED.binary_path,
+			static_path = EXCLUDED.static_path
+	`, req.Id, req.Name, req.Icon, req.Category, req.Description, req.Realtime, req.MinPlayers, req.MaxPlayers, req.BinaryPath, req.StaticPath, req.Category)
 
 	if err != nil {
 		log.Printf("Failed to insert app: %v", err)
