@@ -428,7 +428,6 @@ func ProxyRequest(socketPath string, r *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to socket: %w", err)
 	}
-	defer conn.Close()
 
 	// Build HTTP request to send through socket
 	clientReq := &http.Request{
@@ -444,14 +443,38 @@ func ProxyRequest(socketPath string, r *http.Request) (*http.Response, error) {
 
 	// Send request through socket
 	if err := clientReq.Write(conn); err != nil {
+		conn.Close()
 		return nil, fmt.Errorf("failed to write request: %w", err)
 	}
 
 	// Read response from socket
 	resp, err := http.ReadResponse(bufio.NewReader(conn), clientReq)
 	if err != nil {
+		conn.Close()
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	// Keep connection open - it will be closed when response body is fully read
+	// Wrap the original conn.Close so it only happens after body is consumed
+	resp.Body = &connClosingBody{
+		body: resp.Body,
+		conn: conn,
+	}
+
 	return resp, nil
+}
+
+// connClosingBody wraps a response body and closes the socket connection when done
+type connClosingBody struct {
+	body io.ReadCloser
+	conn net.Conn
+}
+
+func (cb *connClosingBody) Read(p []byte) (n int, err error) {
+	return cb.body.Read(p)
+}
+
+func (cb *connClosingBody) Close() error {
+	cb.body.Close()
+	return cb.conn.Close()
 }
