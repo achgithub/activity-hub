@@ -77,15 +77,13 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 
 	// Check if already running
 	if proc, exists := al.processes[appID]; exists {
-		al.mu.Unlock()
 		if proc.Status == StatusRunning {
+			al.mu.Unlock()
 			proc.LastActivity = time.Now()
 			return nil  // Already running
 		}
 		// Cleanup old process
-		al.mu.Lock()
 		delete(al.processes, appID)
-		al.mu.Unlock()
 	}
 	al.mu.Unlock()
 
