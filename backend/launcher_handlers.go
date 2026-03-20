@@ -110,6 +110,8 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	log.Printf("Response from app %s: status=%d, content-length=%s", appID, resp.StatusCode, resp.Header.Get("Content-Length"))
+
 	// Copy response headers
 	for key, values := range resp.Header {
 		for _, value := range values {
@@ -122,11 +124,7 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 
 	// Stream response body with detailed error logging
 	copied, err := io.Copy(w, resp.Body)
-	if err != nil {
-		log.Printf("Error copying response body for app %s after %d bytes: %v", appID, copied, err)
-	} else {
-		log.Printf("Successfully copied %d bytes for app %s", copied, appID)
-	}
+	log.Printf("Copied %d bytes for app %s, error: %v", copied, appID, err)
 
 	// Update activity timestamp
 	appLauncher.mu.Lock()
