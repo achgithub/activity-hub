@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -67,7 +68,7 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 	// Create HTTP client with Unix socket transport
 	client := &http.Client{
 		Transport: &http.Transport{
-			DialContext: func(ctx, network, addr string) (net.Conn, error) {
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return net.Dial("unix", socketPath)
 			},
 			MaxIdleConns:        1,
