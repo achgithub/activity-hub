@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log"
@@ -419,62 +418,4 @@ func (al *AppLauncher) Cleanup() {
 	for _, appID := range appIDs {
 		al.StopApp(appID)
 	}
-}
-
-// ProxyRequest forwards an HTTP request through a Unix socket
-func ProxyRequest(socketPath string, r *http.Request) (*http.Response, error) {
-	// Connect to Unix socket
-	conn, err := net.Dial("unix", socketPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to socket: %w", err)
-	}
-
-	// Build HTTP request to send through socket
-	clientReq := &http.Request{
-		Method: r.Method,
-		URL:    r.URL,
-		Header: r.Header,
-		Body:   r.Body,
-	}
-
-	// Reset request fields for socket communication
-	clientReq.RequestURI = ""
-	clientReq.RemoteAddr = ""
-
-	// Send request through socket
-	if err := clientReq.Write(conn); err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to write request: %w", err)
-	}
-
-	// Read response from socket
-	resp, err := http.ReadResponse(bufio.NewReader(conn), clientReq)
-	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	// Keep connection open - it will be closed when response body is fully read
-	// Wrap the original conn.Close so it only happens after body is consumed
-	resp.Body = &connClosingBody{
-		body: resp.Body,
-		conn: conn,
-	}
-
-	return resp, nil
-}
-
-// connClosingBody wraps a response body and closes the socket connection when done
-type connClosingBody struct {
-	body io.ReadCloser
-	conn net.Conn
-}
-
-func (cb *connClosingBody) Read(p []byte) (n int, err error) {
-	return cb.body.Read(p)
-}
-
-func (cb *connClosingBody) Close() error {
-	cb.body.Close()
-	return cb.conn.Close()
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -37,7 +38,7 @@ func HandleAppLaunch(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleAppProxy - GET/POST/PUT/DELETE /api/apps/{appId}/proxy/*
-// Proxies all requests to Unix socket
+// Proxies all requests to Unix socket using standard HTTP client
 func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	appID := vars["appId"]
@@ -63,24 +64,37 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 		targetPath = "/"
 	}
 
-	// Create a new request with the target path
-	proxyReq := &http.Request{
-		Method: r.Method,
-		Host:   "unix",
-		Header: r.Header,
-		Body:   r.Body,
-		URL:    r.URL,
+	// Create HTTP client with Unix socket transport
+	client := &http.Client{
+		Transport: &http.Transport{
+			DialContext: func(ctx, network, addr string) (net.Conn, error) {
+				return net.Dial("unix", socketPath)
+			},
+		},
+		Timeout: 30 * time.Second,
 	}
-	proxyReq.URL.Path = targetPath
-	proxyReq.URL.Scheme = "http"
-	proxyReq.URL.Host = "unix"
-	proxyReq.URL.RawQuery = r.URL.RawQuery  // Preserve query parameters (including token)
-	proxyReq.RequestURI = ""
+	defer client.CloseIdleConnections()
 
-	// Send request through Unix socket
-	resp, err := ProxyRequest(socketPath, proxyReq)
+	// Build request to app
+	url := "http://unix" + targetPath
+	if r.URL.RawQuery != "" {
+		url += "?" + r.URL.RawQuery  // Preserve query parameters (including token)
+	}
+
+	proxyReq, err := http.NewRequest(r.Method, url, r.Body)
 	if err != nil {
-		log.Printf("Failed to proxy request: %v", err)
+		log.Printf("Failed to create proxy request: %v", err)
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
+	// Copy headers from original request
+	proxyReq.Header = r.Header.Clone()
+
+	// Send request to app
+	resp, err := client.Do(proxyReq)
+	if err != nil {
+		log.Printf("Failed to proxy request to app %s: %v", appID, err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -100,7 +114,7 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 	// Set status code
 	w.WriteHeader(resp.StatusCode)
 
-	// Stream response body with error handling
+	// Stream response body
 	if _, err := io.Copy(w, resp.Body); err != nil {
 		log.Printf("Error copying response body for app %s: %v", appID, err)
 	}
