@@ -100,8 +100,8 @@ func (al *AppLauncher) LaunchApp(appID string, gameID string) error {
 	os.Remove(socketPath)
 
 	// Build command - look for compiled binary in ./apps/{appId}/backend/
-	// Use just the binary name since cmd.Dir will be set to the backend directory
-	binaryPath := fmt.Sprintf("%s-app", appID)
+	// Use relative path from the backend directory
+	binaryPath := fmt.Sprintf("./%s-app", appID)
 	cmd := exec.Command(binaryPath)
 
 	// Set environment variables
