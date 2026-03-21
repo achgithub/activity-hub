@@ -1536,3 +1536,58 @@ pre {
     display: none;
   }
 }
+
+/* ──────────────────────────────────────────────────────────
+   UTILITY CLASSES
+   ────────────────────────────────────────────────────────── */
+
+/* Width utilities */
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.h-screen {
+  height: 100vh;
+}
+
+/* Flex utilities */
+.flex-1 {
+  flex: 1;
+}
+
+/* Overflow utilities */
+.overflow-auto {
+  overflow: auto;
+}
+
+/* Border utilities */
+.border-0 {
+  border: 0;
+}
+
+/* Text size utilities */
+.text-2xl {
+  font-size: 1.5rem;
+}
+
+.text-6xl {
+  font-size: 3.75rem;
+}
+
+/* Spacing utilities */
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+/* Height utilities */
+.min-h-screen {
+  min-height: 100vh;
+}
