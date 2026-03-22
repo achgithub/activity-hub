@@ -123,9 +123,43 @@ func HandleAppProxy(w http.ResponseWriter, r *http.Request) {
 	// Set status code
 	w.WriteHeader(resp.StatusCode)
 
-	// Stream response body with detailed error logging
-	copied, err := io.Copy(w, resp.Body)
-	log.Printf("Copied %d bytes for app %s, error: %v", copied, appID, err)
+	// For SSE streams, flush after each chunk
+	if resp.Header.Get("Content-Type") == "text/event-stream" {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			log.Printf("Warning: ResponseWriter doesn't support flushing for SSE")
+		}
+
+		// Stream and flush for SSE
+		buf := make([]byte, 4096)
+		copied := int64(0)
+		for {
+			n, err := resp.Body.Read(buf)
+			if n > 0 {
+				written, writeErr := w.Write(buf[:n])
+				copied += int64(written)
+				if flusher != nil {
+					flusher.Flush()
+				}
+				if writeErr != nil {
+					log.Printf("SSE write error for app %s: %v", appID, writeErr)
+					break
+				}
+			}
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Printf("SSE read error for app %s: %v", appID, err)
+				break
+			}
+		}
+		log.Printf("Copied %d bytes (SSE) for app %s", copied, appID)
+	} else {
+		// Regular response, use io.Copy
+		copied, err := io.Copy(w, resp.Body)
+		log.Printf("Copied %d bytes for app %s, error: %v", copied, appID, err)
+	}
 
 	// Update activity timestamp
 	appLauncher.mu.Lock()
