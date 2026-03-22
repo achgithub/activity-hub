@@ -178,5 +178,6 @@ func IsGameApp(appID string) bool {
 	if app == nil {
 		return false
 	}
-	return app.Category == "game" && app.BackendPort > 0
+	// Game apps can use either BackendPort (TCP) or BinaryPath (Unix socket)
+	return app.Category == "game" && (app.BackendPort > 0 || app.BinaryPath != "")
 }
