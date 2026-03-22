@@ -3,8 +3,8 @@ import React from 'react';
 export interface GameCardProps {
   /** Game content */
   children: React.ReactNode;
-  /** Maximum width (default: '600px') */
-  maxWidth?: string;
+  /** Card size variant (default: 'medium') */
+  size?: 'narrow' | 'medium' | 'wide';
   /** Additional CSS class names */
   className?: string;
 }
@@ -13,13 +13,12 @@ export interface GameCardProps {
  * Standard game content card
  * Centers game content in a white card with consistent styling
  */
-export function GameCard({ children, maxWidth = '600px', className }: GameCardProps) {
+export function GameCard({ children, size = 'medium', className }: GameCardProps) {
+  const sizeClass = size ? `ah-card--${size}` : '';
+
   return (
-    <div className="ah-container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-      <div
-        className={`ah-card ${className || ''}`}
-        style={{ maxWidth, margin: '0 auto', textAlign: 'center' }}
-      >
+    <div className="ah-container ah-py-4">
+      <div className={`ah-card ${sizeClass} ah-mx-auto ah-text-center ${className || ''}`}>
         {children}
       </div>
     </div>

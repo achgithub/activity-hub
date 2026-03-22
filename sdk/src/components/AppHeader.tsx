@@ -35,7 +35,7 @@ export function AppHeader({
   return (
     <div className="ah-app-header">
       <div className="ah-app-header-left">
-        {icon && <span style={{ fontSize: '1.5rem' }}>{icon}</span>}
+        {icon && <span className="ah-icon-md">{icon}</span>}
         <h1 className="ah-app-title">{title}</h1>
       </div>
       <div className="ah-app-header-right">
