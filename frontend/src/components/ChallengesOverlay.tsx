@@ -61,9 +61,8 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
   };
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="ah-modal ah-modal--large fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+    <div className="ah-modal-overlay" onClick={onClose}>
+      <div className="ah-modal ah-modal--large" onClick={(e) => e.stopPropagation()}>
         <div className="ah-modal-header ah-flex ah-flex-between">
           <h3>Challenges</h3>
           <button className="ah-modal-close" onClick={onClose}>
@@ -73,10 +72,10 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
 
         <div className="ah-modal-body">
           {/* Received Challenges */}
-          <div className="mb-6">
-            <h4 className="ah-section-title mb-3">Received ({activeReceivedChallenges.length})</h4>
+          <div className="ah-mb-6">
+            <h4 className="ah-section-title ah-mb-3">Received ({activeReceivedChallenges.length})</h4>
             {activeReceivedChallenges.length === 0 ? (
-              <p className="text-gray-500">No incoming challenges</p>
+              <p className="ah-meta">No incoming challenges</p>
             ) : (
               <div className="ah-list">
                 {activeReceivedChallenges.map((challenge) => {
@@ -97,7 +96,7 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
                           appName={appName}
                         />
                         {!challenge.accepted?.includes(userEmail) && (
-                          <div className="ah-flex gap-2">
+                          <div className="ah-flex ah-gap-2">
                             <button
                               className="ah-btn-primary ah-btn-sm"
                               onClick={() => handleAcceptChallenge(challenge.id)}
@@ -117,11 +116,11 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
                   }
 
                   return (
-                    <div key={challenge.id} className="ah-list-item ah-flex ah-flex-col gap-2">
+                    <div key={challenge.id} className="ah-list-item ah-flex ah-flex-col ah-gap-2">
                       <div>
                         <strong>{challenge.fromUser}</strong> → <strong>{appName}</strong>
                       </div>
-                      <div className="ah-flex gap-2">
+                      <div className="ah-flex ah-gap-2">
                         <button
                           className="ah-btn-primary ah-btn-sm"
                           onClick={() => handleAcceptChallenge(challenge.id)}
@@ -135,7 +134,7 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
                           Decline
                         </button>
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="ah-meta">
                         Expires in {Math.max(0, Math.floor((challenge.expiresAt * 1000 - Date.now()) / 1000))}s
                       </div>
                     </div>
@@ -147,9 +146,9 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
 
           {/* Sent Challenges */}
           <div>
-            <h4 className="ah-section-title mb-3">Sent ({activeSentChallenges.length})</h4>
+            <h4 className="ah-section-title ah-mb-3">Sent ({activeSentChallenges.length})</h4>
             {activeSentChallenges.length === 0 ? (
-              <p className="text-gray-500">No outgoing challenges</p>
+              <p className="ah-meta">No outgoing challenges</p>
             ) : (
               <div className="ah-list">
                 {activeSentChallenges.map((challenge) => {
@@ -174,14 +173,14 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
                   }
 
                   return (
-                    <div key={challenge.id} className="ah-list-item ah-flex ah-flex-col gap-2">
+                    <div key={challenge.id} className="ah-list-item ah-flex ah-flex-col ah-gap-2">
                       <div>
                         <strong>{challenge.toUser}</strong> → <strong>{appName}</strong>
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="ah-meta">
                         Waiting for response...
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="ah-meta">
                         Expires in {Math.max(0, Math.floor((challenge.expiresAt * 1000 - Date.now()) / 1000))}s
                       </div>
                     </div>
@@ -192,7 +191,7 @@ const ChallengesOverlay: React.FC<ChallengesOverlayProps> = ({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

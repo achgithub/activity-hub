@@ -1542,9 +1542,17 @@ pre {
   margin-bottom: 1.5rem;
 }
 
+.ah-mb-6 {
+  margin-bottom: 3rem;
+}
+
 .ah-py-4 {
   padding-top: 2rem;
   padding-bottom: 2rem;
+}
+
+.ah-gap-2 {
+  gap: 0.5rem;
 }
 
 .ah-icon-xl {
