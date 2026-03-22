@@ -182,6 +182,18 @@ pre {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
+.ah-card--narrow {
+  max-width: 28rem;
+}
+
+.ah-card--medium {
+  max-width: 37.5rem; /* 600px */
+}
+
+.ah-card--wide {
+  max-width: 50rem; /* 800px */
+}
+
 /* ──────────────────────────────────────────────────────────
    BANNERS & ALERTS
    ────────────────────────────────────────────────────────── */
@@ -1555,10 +1567,23 @@ pre {
   gap: 0.5rem;
 }
 
+.ah-icon-md {
+  font-size: 1.5rem;
+}
+
 .ah-icon-xl {
   font-size: 3rem;
   margin-bottom: 1rem;
   display: block;
+}
+
+.ah-mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ah-text-center {
+  text-align: center;
 }
 
 .ah-card-hover {
