@@ -88,7 +88,9 @@ const GameChallengeModal: React.FC<GameChallengeModalProps> = ({
     }
   };
 
-  const canProceed = selectedPlayers.length >= minPlayers && selectedPlayers.length <= maxPlayers;
+  // For 2-player games, count includes current user + selected opponents
+  const totalPlayers = isGroupGame ? selectedPlayers.length : selectedPlayers.length + 1;
+  const canProceed = totalPlayers >= minPlayers && totalPlayers <= maxPlayers;
 
   const handleOptionChange = (optionId: string, value: string | number | boolean) => {
     setOptions(prev => ({ ...prev, [optionId]: value }));
