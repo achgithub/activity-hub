@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { User } from '../types';
@@ -32,12 +32,12 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   // Fetch apps from registry
   const { apps, loading: appsLoading, refreshApps } = useApps();
 
-  const handleNewChallenge = (challenge: any) => {
+  const handleNewChallenge = useCallback((challenge: any) => {
     setToastChallenge(challenge);
-  };
+  }, []);
 
   // Redirect to game (not popup - iOS Safari blocks popups from SSE handlers)
-  const handleGameStart = (appId: string, gameId: string) => {
+  const handleGameStart = useCallback((appId: string, gameId: string) => {
     const app = apps.find(a => a.id === appId);
     if (app) {
       const gameUrl = buildAppUrl(app, {
@@ -50,7 +50,7 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
       // Use location.href to redirect entirely - leaves the shell
       window.location.href = gameUrl;
     }
-  };
+  }, [apps, user.email, user.name, user.is_admin]);
 
   const {
     onlineUsers,
@@ -68,14 +68,14 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   const notificationCount = receivedChallenges.filter(c => c.status === 'pending').length;
 
   // Navigate to app container (which launches the app via Unix socket)
-  const handleAppClick = (appId: string) => {
+  const handleAppClick = useCallback((appId: string) => {
     console.log('🎮 Navigating to app:', appId);
     navigate(`/app/${appId}`);
-  };
+  }, [navigate]);
 
-  const handleDismissToast = () => {
+  const handleDismissToast = useCallback(() => {
     setToastChallenge(null);
-  };
+  }, []);
 
   return (
     <div className="ah-screen">
