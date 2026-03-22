@@ -168,6 +168,80 @@ for FILE in $COMPONENT_FILES; do
 done
 
 # ===================================================================
+# CHECK 8: Mini-apps must import activity-hub-sdk
+# ===================================================================
+echo ""
+echo "Checking for SDK usage in mini-apps..."
+
+# Detect if this is a mini-app by checking package.json for activity-hub-sdk
+IS_MINI_APP=false
+if [ -f "frontend/package.json" ] || [ -f "package.json" ]; then
+    PACKAGE_JSON="package.json"
+    [ -f "frontend/package.json" ] && PACKAGE_JSON="frontend/package.json"
+
+    if grep -q '"activity-hub-sdk"' "$PACKAGE_JSON"; then
+        IS_MINI_APP=true
+    fi
+fi
+
+if [ "$IS_MINI_APP" = true ]; then
+    echo "  📦 Mini-app detected - enforcing SDK component usage"
+
+    # Check that components import AppHeader or GameCard
+    COMPONENT_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(tsx)$' || true)
+
+    for FILE in $COMPONENT_FILES; do
+        # Skip test files and config files
+        if [[ $FILE == *".test."* ]] || [[ $FILE == *".spec."* ]] || [[ $FILE == *"config"* ]]; then
+            continue
+        fi
+
+        # Check for manual ah-app-header usage (should use AppHeader component)
+        MANUAL_HEADER=$(grep -n 'className="ah-app-header"' "$FILE" 2>/dev/null || true)
+        if [ ! -z "$MANUAL_HEADER" ]; then
+            echo -e "${RED}❌ ERROR: $FILE manually creates app header${NC}"
+            echo "$MANUAL_HEADER" | sed 's/^/  /'
+            echo -e "${YELLOW}   Use SDK component instead:${NC}"
+            echo "   import { AppHeader } from 'activity-hub-sdk';"
+            echo "   <AppHeader title=\"Your Title\" icon=\"🎮\" />"
+            ERRORS=$((ERRORS + 1))
+        fi
+
+        # Check for manual ah-lobby-btn in custom headers (should use AppHeader)
+        MANUAL_LOBBY_BTN=$(grep -n 'className="ah-lobby-btn"' "$FILE" 2>/dev/null || true)
+        if [ ! -z "$MANUAL_LOBBY_BTN" ]; then
+            # Only error if it's part of a custom header structure
+            if grep -q '<div className="ah-app-header' "$FILE"; then
+                echo -e "${YELLOW}⚠️  WARNING: $FILE has manual header structure${NC}"
+                echo -e "${YELLOW}   Consider using AppHeader component from SDK${NC}"
+                echo "   import { AppHeader } from 'activity-hub-sdk';"
+                WARNINGS=$((WARNINGS + 1))
+            fi
+        fi
+    done
+
+    # Check that SDK is imported where components are used
+    for FILE in $COMPONENT_FILES; do
+        # Skip if file doesn't use any ah- classes
+        if ! grep -q 'ah-' "$FILE"; then
+            continue
+        fi
+
+        # If file uses ah-app-header-related classes, ensure SDK is imported
+        if grep -q 'ah-app-header\|ah-app-title' "$FILE"; then
+            if ! grep -q "from 'activity-hub-sdk'" "$FILE" && ! grep -q 'from "activity-hub-sdk"' "$FILE"; then
+                echo -e "${YELLOW}⚠️  WARNING: $FILE may need to import SDK components${NC}"
+                echo -e "${YELLOW}   If using app headers, import from SDK:${NC}"
+                echo "   import { AppHeader } from 'activity-hub-sdk';"
+                WARNINGS=$((WARNINGS + 1))
+            fi
+        fi
+    done
+else
+    echo "  ℹ️  Not a mini-app - skipping SDK enforcement"
+fi
+
+# ===================================================================
 # Summary
 # ===================================================================
 echo ""
@@ -183,6 +257,6 @@ elif [ $WARNINGS -gt 0 ]; then
     echo -e "${GREEN}   Warnings don't block commits, but consider addressing them${NC}"
     exit 0
 else
-    echo -e "${GREEN}✅ All CSS enforcement checks passed!${NC}"
+    echo -e "${GREEN}✅ All enforcement checks passed!${NC}"
     exit 0
 fi
