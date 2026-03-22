@@ -78,42 +78,42 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="ah-screen">
       {/* Shell Header */}
       <header className="ah-app-header">
-        <button className="text-xl font-bold text-blue-600 hover:text-blue-700 transition" onClick={() => navigate('/lobby')}>
+        <h1 className="ah-app-title ah-clickable" onClick={() => navigate('/lobby')}>
           Activity Hub
-        </button>
+        </h1>
 
-        <div className="ah-flex ah-flex-center gap-4">
+        <div className="ah-app-header-right">
           {!user.is_guest && (
             <>
               <button className="ah-btn-outline ah-btn-sm" onClick={() => setShowSettings(true)} title="Settings">
                 Settings
               </button>
               <button
-                className="ah-btn-outline ah-btn-sm relative"
+                className="ah-btn-outline ah-btn-sm ah-btn-with-badge"
                 onClick={() => setShowChallenges(!showChallenges)}
                 title="Challenges"
               >
                 Challenges
                 {notificationCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="ah-notification-badge">
                     {notificationCount}
                   </span>
                 )}
               </button>
             </>
           )}
-          <div className="ah-flex ah-flex-center gap-2">
+          <div className="ah-app-header-right">
             {awarenessInitialized && !user.is_guest && (
-              <div className="ah-flex-center gap-1 px-2 py-1 text-sm">
+              <div className="ah-flex ah-flex-center">
                 {status === 'online' && <span>🟢</span>}
                 {status === 'in_game' && <span>🎮</span>}
                 {status === 'away' && <span>🟡</span>}
                 {status === 'offline' && <span>⚪</span>}
                 {status === 'do_not_disturb' && <span>🔴</span>}
-                <span className="text-xs text-gray-600 capitalize">{status}</span>
+                <span className="ah-meta ah-capitalize ah-ml-2">{status}</span>
               </div>
             )}
             <button
@@ -133,9 +133,9 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
       {/* Impersonation Banner */}
       {user.impersonating && (
         <div className="ah-banner ah-banner--warning">
-          <span className="font-semibold">⚠️ Impersonating {user.email}</span>
-          <span className="text-sm">(Super User: {user.superUser})</span>
-          <button className="ah-btn-outline ah-btn-sm ml-auto" onClick={onEndImpersonation}>
+          <span>⚠️ Impersonating {user.email}</span>
+          <span className="ah-meta">(Super User: {user.superUser})</span>
+          <button className="ah-btn-outline ah-btn-sm" onClick={onEndImpersonation}>
             Exit Impersonation
           </button>
         </div>
@@ -160,9 +160,9 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
       {/* Main Content Area */}
       <main>
         {appsLoading ? (
-          <div className="flex items-center justify-center py-16">
+          <div className="ah-flex-center-justify ah-py-4">
             <div className="ah-spinner"></div>
-            <p className="ml-4">Loading apps...</p>
+            <p className="ah-ml-2">Loading apps...</p>
           </div>
         ) : (
           <Routes>
@@ -171,15 +171,15 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
               <Route
                 path="/apps"
                 element={
-                  <div className="ah-container py-8">
-                    <h2 className="text-2xl font-bold mb-2">Available Apps</h2>
-                    <p className="text-gray-600 mb-6">You are in guest mode. Only public apps are accessible.</p>
+                  <div className="ah-container ah-py-4">
+                    <h2 className="ah-header-title">Available Apps</h2>
+                    <p className="ah-meta ah-mb-3">You are in guest mode. Only public apps are accessible.</p>
                     <div className="ah-grid-auto">
                       {apps.map(app => (
-                        <button key={app.id} className="ah-card hover:shadow-lg transition-shadow text-left" onClick={() => handleAppClick(app.id)}>
-                          <span className="text-3xl mb-3 block">{app.icon}</span>
-                          <h3 className="font-semibold mb-1">{app.name}</h3>
-                          <p className="text-sm text-gray-600">{app.description}</p>
+                        <button key={app.id} className="ah-card ah-card-hover" onClick={() => handleAppClick(app.id)}>
+                          <span className="ah-icon-xl">{app.icon}</span>
+                          <h3 className="ah-card-title">{app.name}</h3>
+                          <p className="ah-meta">{app.description}</p>
                         </button>
                       ))}
                     </div>
@@ -210,9 +210,9 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
             <Route
               path="/profile"
               element={
-                <div className="ah-container py-8">
-                  <h2 className="text-2xl font-bold mb-4">👤 Profile</h2>
-                  <p className="text-gray-600">Profile management coming soon...</p>
+                <div className="ah-container ah-py-4">
+                  <h2 className="ah-header-title">👤 Profile</h2>
+                  <p className="ah-meta">Profile management coming soon...</p>
                 </div>
               }
             />
