@@ -606,19 +606,28 @@ func createGameForMultiChallenge(challenge *Challenge) (string, error) {
 func getGameBackendURL(appID string) string {
 	app := GetAppByID(appID)
 	if app == nil {
+		log.Printf("getGameBackendURL: app %s not found in registry", appID)
 		return ""
 	}
 
+	log.Printf("getGameBackendURL: app=%s, category=%s, backendPort=%d, binaryPath=%s",
+		appID, app.Category, app.BackendPort, app.BinaryPath)
+
 	// Unix socket apps: use internal proxy
 	if app.BinaryPath != "" {
-		return fmt.Sprintf("http://127.0.0.1:3001/api/apps/%s/proxy", appID)
+		url := fmt.Sprintf("http://127.0.0.1:3001/api/apps/%s/proxy", appID)
+		log.Printf("getGameBackendURL: returning proxy URL: %s", url)
+		return url
 	}
 
 	// TCP-based apps: direct port connection
 	if app.BackendPort > 0 {
-		return fmt.Sprintf("http://127.0.0.1:%d", app.BackendPort)
+		url := fmt.Sprintf("http://127.0.0.1:%d", app.BackendPort)
+		log.Printf("getGameBackendURL: returning port URL: %s", url)
+		return url
 	}
 
+	log.Printf("getGameBackendURL: no backend URL available for app %s", appID)
 	return ""
 }
 
