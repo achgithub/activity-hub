@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/achgithub/activity-hub-auth"
 )
 
 type UserAppPreference struct {
@@ -135,7 +137,7 @@ func handleUpdateUserPreferences(w http.ResponseWriter, r *http.Request) {
 }
 
 // extractEmailFromRequest extracts email from Authorization header
-// Supports both demo-token and impersonate-token formats
+// Supports JWT, impersonate-token, and guest-token formats
 func extractEmailFromRequest(r *http.Request) string {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -148,22 +150,12 @@ func extractEmailFromRequest(r *http.Request) string {
 		token = token[7:]
 	}
 
-	// Check for impersonation token
-	if len(token) > 12 && token[:12] == "impersonate-" {
-		var impersonatedEmail string
-		err := db.QueryRow(`
-			SELECT impersonated_email
-			FROM impersonation_sessions
-			WHERE impersonation_token = $1 AND is_active = TRUE
-		`, token).Scan(&impersonatedEmail)
-
-		if err == nil {
-			return impersonatedEmail
-		}
-	} else if len(token) > 11 && token[:11] == "demo-token-" {
-		// Extract email from demo token
-		return token[11:]
+	// Use centralized token validation from auth library
+	user, err := auth.ResolveToken(db, token)
+	if err != nil {
+		log.Printf("Failed to resolve token in preferences: %v", err)
+		return ""
 	}
 
-	return ""
+	return user.Email
 }

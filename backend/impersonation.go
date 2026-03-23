@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/achgithub/activity-hub-auth"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
@@ -25,31 +26,16 @@ func handleStartImpersonation(w http.ResponseWriter, r *http.Request) {
 		token = token[7:]
 	}
 
-	// Extract super user email from token
-	if len(token) < 11 || token[:11] != "demo-token-" {
+	// Validate token and get user using auth library
+	superUser, err := auth.ResolveToken(db, token)
+	if err != nil {
+		log.Printf("Auth failed for impersonation start: %v", err)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
-
-	superUserEmail := token[11:]
 
 	// Verify super_user role
-	var roles pq.StringArray
-	err := db.QueryRow("SELECT COALESCE(roles, '{}') FROM users WHERE email = $1", superUserEmail).Scan(&roles)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	hasSuperUser := false
-	for _, role := range roles {
-		if role == "super_user" {
-			hasSuperUser = true
-			break
-		}
-	}
-
-	if !hasSuperUser {
+	if !superUser.HasRole("super_user") {
 		http.Error(w, "Forbidden - super_user role required", http.StatusForbidden)
 		return
 	}
@@ -91,7 +77,7 @@ func handleStartImpersonation(w http.ResponseWriter, r *http.Request) {
 		INSERT INTO impersonation_sessions
 		(super_user_email, impersonated_email, original_token, impersonation_token, is_active)
 		VALUES ($1, $2, $3, $4, TRUE)
-	`, superUserEmail, targetUser.Email, token, impersonationToken)
+	`, superUser.Email, targetUser.Email, token, impersonationToken)
 
 	if err != nil {
 		log.Printf("Failed to create impersonation session: %v", err)
@@ -99,7 +85,7 @@ func handleStartImpersonation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("🔄 Impersonation started: %s -> %s", superUserEmail, targetUser.Email)
+	log.Printf("🔄 Impersonation started: %s -> %s", superUser.Email, targetUser.Email)
 
 	// Return impersonation token and target user info
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -110,7 +96,7 @@ func handleStartImpersonation(w http.ResponseWriter, r *http.Request) {
 			"name":          targetUser.Name,
 			"roles":         targetUser.Roles,
 			"impersonating": true,
-			"superUser":     superUserEmail,
+			"superUser":     superUser.Email,
 		},
 	})
 }

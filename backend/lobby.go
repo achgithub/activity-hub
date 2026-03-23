@@ -8,6 +8,9 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/achgithub/activity-hub-auth"
+	"github.com/lib/pq"
 )
 
 // UserPresence represents a user's online status
@@ -41,6 +44,35 @@ type Challenge struct {
 	ExpiresAt   int64                  `json:"expiresAt"`
 	RespondedAt int64                  `json:"respondedAt,omitempty"`
 	Options     map[string]interface{} `json:"options,omitempty"`
+}
+
+// generateJWTForUser looks up a user by email and generates a JWT token for them
+func generateJWTForUser(email string) (string, error) {
+	// Look up user details from database
+	var user struct {
+		Email   string
+		Name    string
+		IsAdmin bool
+		Roles   []string
+	}
+
+	err := db.QueryRow(`
+		SELECT email, name, is_admin, COALESCE(roles, '{}')
+		FROM users
+		WHERE email = $1
+	`, email).Scan(&user.Email, &user.Name, &user.IsAdmin, pq.Array(&user.Roles))
+
+	if err != nil {
+		return "", fmt.Errorf("failed to look up user %s: %w", email, err)
+	}
+
+	// Generate JWT token using auth library
+	token, err := auth.GenerateJWT(user.Email, user.Name, user.IsAdmin, user.Roles)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate JWT for %s: %w", email, err)
+	}
+
+	return token, nil
 }
 
 // HandleGetPresence - GET /api/lobby/presence
@@ -491,12 +523,18 @@ func createGameForChallenge(challenge *Challenge, player1Name, player2Name strin
 		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	// Generate JWT token for the challenge initiator
+	token, err := generateJWTForUser(challenge.FromUser)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
 	req, err := http.NewRequest("POST", gameURL+"/api/game", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer demo-token-"+challenge.FromUser)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -568,12 +606,18 @@ func createGameForMultiChallenge(challenge *Challenge) (string, error) {
 
 	log.Printf("🎮 Creating multi-player game with %d players", len(players))
 
+	// Generate JWT token for the challenge initiator
+	token, err := generateJWTForUser(challenge.InitiatorID)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
 	req, err := http.NewRequest("POST", gameURL+"/api/game", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer demo-token-"+challenge.InitiatorID)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

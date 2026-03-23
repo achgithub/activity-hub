@@ -226,8 +226,13 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate simple demo token
-	token := "demo-token-" + user.Email
+	// Generate JWT token
+	token, err := auth.GenerateJWT(user.Email, user.Name, user.IsAdmin, user.Roles)
+	if err != nil {
+		log.Printf("Failed to generate JWT: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -272,112 +277,41 @@ func handleValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check for guest token
-	if len(req.Token) > 12 && req.Token[:12] == "guest-token-" {
-		guestID := req.Token[12:]
-
+	// Use centralized token validation from auth library
+	user, err := auth.ResolveToken(db, req.Token)
+	if err != nil {
+		log.Printf("Token validation failed: %v", err)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"valid": true,
-			"user": map[string]interface{}{
-				"email":    "guest-" + guestID,
-				"name":     "Guest",
-				"is_admin": false,
-				"roles":    []string{},
-				"is_guest": true,
-			},
+			"valid": false,
 		})
 		return
 	}
 
-	// Check for impersonation token
-	if len(req.Token) > 12 && req.Token[:12] == "impersonate-" {
-		var session struct {
-			SuperUserEmail     string
-			ImpersonatedEmail  string
-		}
+	// Check if this is a guest user (email starts with "guest-")
+	isGuest := len(user.Email) > 6 && user.Email[:6] == "guest-"
 
-		err := db.QueryRow(`
-			SELECT super_user_email, impersonated_email
-			FROM impersonation_sessions
-			WHERE impersonation_token = $1 AND is_active = TRUE
-		`, req.Token).Scan(&session.SuperUserEmail, &session.ImpersonatedEmail)
-
-		if err != nil {
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"valid": false,
-			})
-			return
-		}
-
-		// Get impersonated user info
-		var user struct {
-			Email   string
-			Name    string
-			IsAdmin bool
-			Roles   []string
-		}
-
-		err = db.QueryRow("SELECT email, name, is_admin, COALESCE(roles, '{}') FROM users WHERE email = $1", session.ImpersonatedEmail).
-			Scan(&user.Email, &user.Name, &user.IsAdmin, (*pq.StringArray)(&user.Roles))
-
-		if err != nil {
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"valid": false,
-			})
-			return
-		}
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"valid": true,
-			"user": map[string]interface{}{
-				"email":         user.Email,
-				"name":          user.Name,
-				"is_admin":      user.IsAdmin,
-				"roles":         user.Roles,
-				"impersonating": true,
-				"superUser":     session.SuperUserEmail,
-			},
-		})
-		return
+	response := map[string]interface{}{
+		"valid": true,
+		"user": map[string]interface{}{
+			"email":    user.Email,
+			"name":     user.Name,
+			"is_admin": user.IsAdmin,
+			"roles":    user.Roles,
+		},
 	}
 
-	// For prototype, validate any demo token
-	if len(req.Token) > 11 && req.Token[:11] == "demo-token-" {
-		email := req.Token[11:]
-
-		// Query user info from database
-		var user struct {
-			Email   string
-			Name    string
-			IsAdmin bool
-			Roles   []string
-		}
-
-		err := db.QueryRow("SELECT email, name, is_admin, COALESCE(roles, '{}') FROM users WHERE email = $1", email).
-			Scan(&user.Email, &user.Name, &user.IsAdmin, (*pq.StringArray)(&user.Roles))
-
-		if err != nil {
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"valid": false,
-			})
-			return
-		}
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"valid": true,
-			"user": map[string]interface{}{
-				"email":    user.Email,
-				"name":     user.Name,
-				"is_admin": user.IsAdmin,
-				"roles":    user.Roles,
-			},
-		})
-		return
+	// Add guest flag if applicable
+	if isGuest {
+		response["user"].(map[string]interface{})["is_guest"] = true
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"valid": false,
-	})
+	// Add impersonation info if applicable
+	if user.IsImpersonating {
+		response["user"].(map[string]interface{})["impersonating"] = true
+		response["user"].(map[string]interface{})["superUser"] = user.ImpersonatedBy
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 // getEnv gets environment variable with fallback to default value

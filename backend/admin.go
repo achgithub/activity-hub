@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/achgithub/activity-hub-auth"
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 )
@@ -25,32 +26,16 @@ func requireSetupAdmin(next http.HandlerFunc) http.HandlerFunc {
 			token = token[7:]
 		}
 
-		// Extract email from token
-		if len(token) < 11 || token[:11] != "demo-token-" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		email := token[11:]
-
-		// Query user roles
-		var roles pq.StringArray
-		err := db.QueryRow("SELECT COALESCE(roles, '{}') FROM users WHERE email = $1", email).Scan(&roles)
+		// Validate token using auth library
+		user, err := auth.ResolveToken(db, token)
 		if err != nil {
+			log.Printf("Auth failed for requireSetupAdmin: %v", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		// Check for setup_admin role
-		hasRole := false
-		for _, role := range roles {
-			if role == "setup_admin" {
-				hasRole = true
-				break
-			}
-		}
-
-		if !hasRole {
+		if !user.HasRole("setup_admin") {
 			http.Error(w, "Forbidden - setup_admin role required", http.StatusForbidden)
 			return
 		}
@@ -75,32 +60,16 @@ func requireSuperUser(next http.HandlerFunc) http.HandlerFunc {
 			token = token[7:]
 		}
 
-		// Extract email from token
-		if len(token) < 11 || token[:11] != "demo-token-" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		email := token[11:]
-
-		// Query user roles
-		var roles pq.StringArray
-		err := db.QueryRow("SELECT COALESCE(roles, '{}') FROM users WHERE email = $1", email).Scan(&roles)
+		// Validate token using auth library
+		user, err := auth.ResolveToken(db, token)
 		if err != nil {
+			log.Printf("Auth failed for requireSuperUser: %v", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		// Check for super_user role
-		hasRole := false
-		for _, role := range roles {
-			if role == "super_user" {
-				hasRole = true
-				break
-			}
-		}
-
-		if !hasRole {
+		if !user.HasRole("super_user") {
 			http.Error(w, "Forbidden - super_user role required", http.StatusForbidden)
 			return
 		}
