@@ -45,9 +45,6 @@ const Lobby: React.FC<LobbyProps> = ({
   const [favoriteAppIds, setFavoriteAppIds] = useState<Set<string>>(new Set());
   const [appPreferences, setAppPreferences] = useState<AppPreference[]>([]);
 
-  // Appear offline toggle
-  const [appearOffline, setAppearOffline] = useState(false);
-
   // Section collapse state
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
@@ -343,26 +340,14 @@ const Lobby: React.FC<LobbyProps> = ({
       <div className="ah-app-header">
         <h1>Game Lobby</h1>
 
-        {/* User status and online users button */}
+        {/* Online users button */}
         <div className="ah-flex ah-flex-center gap-4">
-          <div className="ah-flex ah-flex-center gap-2">
-            <span className={`w-3 h-3 rounded-full ${appearOffline ? 'bg-gray-400' : 'bg-green-500'}`}></span>
-            <span className="font-medium">{userName}</span>
-            <button
-              className={`ah-btn-outline ah-btn-sm ${appearOffline ? 'opacity-60' : ''}`}
-              onClick={() => setAppearOffline(!appearOffline)}
-              title={appearOffline ? 'Appear online' : 'Appear offline'}
-            >
-              {appearOffline ? 'Offline' : 'Online'}
-            </button>
-          </div>
-
-          {onlineUsers.length > 0 && (
+          {onlineUsers.filter(u => u.email !== userEmail).length > 0 && (
             <button
               className="ah-btn-outline ah-btn-sm"
               onClick={() => setShowOnlineUsersOverlay(!showOnlineUsersOverlay)}
             >
-              {onlineUsers.length} online
+              {onlineUsers.filter(u => u.email !== userEmail).length} online
             </button>
           )}
         </div>
@@ -377,7 +362,7 @@ const Lobby: React.FC<LobbyProps> = ({
           />
           <div className="ah-modal ah-modal--large fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <div className="ah-modal-header ah-flex ah-flex-between">
-              <h3>Online Users ({onlineUsers.length})</h3>
+              <h3>Online Users ({onlineUsers.filter(u => u.email !== userEmail).length})</h3>
               <button
                 className="ah-modal-close"
                 onClick={() => setShowOnlineUsersOverlay(false)}
@@ -387,13 +372,22 @@ const Lobby: React.FC<LobbyProps> = ({
             </div>
             <div className="ah-modal-body">
               <div className="ah-list">
-                {onlineUsers.map((user) => (
+                {onlineUsers
+                  .filter(user => user.email !== userEmail) // Don't show self
+                  .map((user) => (
                   <div key={user.email} className="ah-list-item ah-flex ah-flex-between">
                     <div className="ah-flex ah-flex-center gap-3 flex-1">
-                      <span className={`w-3 h-3 rounded-full ${user.status === 'online' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                      {/* Status indicator */}
+                      {user.status === 'online' && <span className="w-3 h-3 rounded-full bg-green-500" title="Online"></span>}
+                      {user.status === 'in_game' && <span className="text-lg" title="In Game">🎮</span>}
+                      {user.status === 'away' && <span className="w-3 h-3 rounded-full bg-yellow-500" title="Away"></span>}
+                      {user.status === 'do_not_disturb' && <span className="w-3 h-3 rounded-full bg-red-500" title="Do Not Disturb"></span>}
+                      {user.status === 'offline' && <span className="w-3 h-3 rounded-full bg-gray-400" title="Offline"></span>}
+
                       <span className="font-medium">{user.displayName}</span>
+                      <span className="text-xs text-gray-500">({user.status})</span>
                       {user.currentApp && (
-                        <span className="text-sm text-gray-500">in {user.currentApp}</span>
+                        <span className="text-sm text-gray-500">• {user.currentApp}</span>
                       )}
                     </div>
                     <div className="ah-flex gap-2">

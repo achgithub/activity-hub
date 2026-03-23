@@ -31,12 +31,16 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   const { status, setStatus, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
 
   // Automatically update status based on current route
+  // Only auto-update if user hasn't manually set offline or do_not_disturb
   React.useEffect(() => {
     if (!awarenessInitialized || !setStatus || user.is_guest) return;
 
+    // Don't override manual status settings
+    if (status === 'offline' || status === 'do_not_disturb') return;
+
     if (location.pathname === '/lobby' || location.pathname === '/') {
-      // In lobby → online
-      if (status !== 'online') {
+      // In lobby → online (only if not already online or away)
+      if (status !== 'online' && status !== 'away') {
         setStatus('online');
       }
     } else if (location.pathname.startsWith('/app/')) {
@@ -126,12 +130,17 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
           )}
           {awarenessInitialized && !user.is_guest && (
             <div className="ah-flex ah-flex-center">
-              {status === 'online' && <span>🟢</span>}
-              {status === 'in_game' && <span>🎮</span>}
-              {status === 'away' && <span>🟡</span>}
-              {status === 'offline' && <span>⚪</span>}
-              {status === 'do_not_disturb' && <span>🔴</span>}
-              <span className="ah-meta ah-capitalize ah-ml-2">{status}</span>
+              <select
+                className="ah-select ah-btn-sm"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="online">🟢 Online</option>
+                <option value="in_game">🎮 In Game</option>
+                <option value="away">🟡 Away</option>
+                <option value="do_not_disturb">🔴 Do Not Disturb</option>
+                <option value="offline">⚪ Offline</option>
+              </select>
             </div>
           )}
           <button
