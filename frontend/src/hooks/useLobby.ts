@@ -338,7 +338,9 @@ export function useLobby(userEmail: string, options?: UseLobbyOptions) {
     // Cleanup on unmount
     return () => {
       clearInterval(heartbeat);
-      eventSource.close();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
       updatePresence('away');
     };
   }, [userEmail, updatePresence, fetchOnlineUsers, fetchChallenges, fetchSentChallenges]);
