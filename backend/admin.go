@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
@@ -10,6 +11,35 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/lib/pq"
 )
+
+// requireAuth middleware - validates JWT token and adds email to context
+func requireAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Extract token
+		token := authHeader
+		if len(token) > 7 && token[:7] == "Bearer " {
+			token = token[7:]
+		}
+
+		// Validate token using auth library
+		user, err := auth.ResolveToken(db, token)
+		if err != nil {
+			log.Printf("Auth failed: %v", err)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// Add user email to context
+		ctx := context.WithValue(r.Context(), "user_email", user.Email)
+		next(w, r.WithContext(ctx))
+	}
+}
 
 // requireSetupAdmin middleware - only allows users with setup_admin role
 func requireSetupAdmin(next http.HandlerFunc) http.HandlerFunc {

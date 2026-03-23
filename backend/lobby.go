@@ -112,7 +112,7 @@ func HandleGetPresence(w http.ResponseWriter, r *http.Request) {
 				emailSet[email] = true
 			}
 
-			filteredUsers := make([]OnlineUser, 0, len(filteredEmails))
+			filteredUsers := make([]UserPresence, 0, len(filteredEmails))
 			for _, user := range users {
 				if emailSet[user.Email] {
 					filteredUsers = append(filteredUsers, user)
