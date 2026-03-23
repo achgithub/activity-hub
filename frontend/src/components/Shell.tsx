@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { User } from '../types';
 import { useAwareness } from 'activity-hub-sdk';
 import { useLobby } from '../hooks/useLobby';
@@ -19,6 +19,7 @@ interface ShellProps {
 
 const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [toastChallenge, setToastChallenge] = useState<any | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
@@ -197,7 +198,7 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
             )}
             <Route
               path="/app/:appId"
-              element={<AppContainer apps={apps} user={user} />}
+              element={<AppContainer key={location.pathname + location.search} apps={apps} user={user} />}
             />
             <Route
               path="/profile"
