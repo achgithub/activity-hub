@@ -100,28 +100,26 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
               </button>
             </>
           )}
-          <div className="ah-app-header-right">
-            {awarenessInitialized && !user.is_guest && (
-              <div className="ah-flex ah-flex-center">
-                {status === 'online' && <span>🟢</span>}
-                {status === 'in_game' && <span>🎮</span>}
-                {status === 'away' && <span>🟡</span>}
-                {status === 'offline' && <span>⚪</span>}
-                {status === 'do_not_disturb' && <span>🔴</span>}
-                <span className="ah-meta ah-capitalize ah-ml-2">{status}</span>
-              </div>
-            )}
-            <button
-              className="ah-btn-outline ah-btn-sm"
-              onClick={() => navigate('/profile')}
-              title="Profile"
-            >
-              {user.is_guest ? 'Guest' : user.email}
-            </button>
-            <button className="ah-btn-outline ah-btn-sm" onClick={onLogout}>
-              {user.is_guest ? 'Exit' : 'Sign out'}
-            </button>
-          </div>
+          {awarenessInitialized && !user.is_guest && (
+            <div className="ah-flex ah-flex-center">
+              {status === 'online' && <span>🟢</span>}
+              {status === 'in_game' && <span>🎮</span>}
+              {status === 'away' && <span>🟡</span>}
+              {status === 'offline' && <span>⚪</span>}
+              {status === 'do_not_disturb' && <span>🔴</span>}
+              <span className="ah-meta ah-capitalize ah-ml-2">{status}</span>
+            </div>
+          )}
+          <button
+            className="ah-btn-outline ah-btn-sm"
+            onClick={() => navigate('/profile')}
+            title="Profile"
+          >
+            {user.is_guest ? 'Guest' : user.email}
+          </button>
+          <button className="ah-btn-outline ah-btn-sm" onClick={onLogout}>
+            {user.is_guest ? 'Exit' : 'Sign out'}
+          </button>
         </div>
       </header>
 
