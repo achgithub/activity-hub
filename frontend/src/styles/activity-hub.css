@@ -1672,14 +1672,6 @@ pre {
     gap: 0.25rem;
   }
 
-  /* Truncate email to smaller max width on mobile */
-  .ah-app-header-right button[title="Profile"] {
-    max-width: 110px !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   /* Make notification badge smaller */
   .ah-notification-badge {
     min-width: 0.875rem;

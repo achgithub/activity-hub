@@ -72,6 +72,12 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
     setToastChallenge(null);
   }, []);
 
+  // Truncate email for mobile display
+  const truncateEmail = (email: string) => {
+    if (email.length <= 10) return email;
+    return email.substring(0, 7) + '...';
+  };
+
   return (
     <div className="ah-screen">
       {/* Shell Header */}
@@ -113,9 +119,9 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
           <button
             className="ah-btn-outline ah-btn-sm"
             onClick={() => navigate('/profile')}
-            title="Profile"
+            title={user.is_guest ? 'Guest Profile' : user.email}
           >
-            {user.is_guest ? 'Guest' : user.email}
+            {user.is_guest ? 'Guest' : truncateEmail(user.email)}
           </button>
           <button className="ah-btn-outline ah-btn-sm" onClick={onLogout}>
             {user.is_guest ? 'Exit' : 'Sign out'}
