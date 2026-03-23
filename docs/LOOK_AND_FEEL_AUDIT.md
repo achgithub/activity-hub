@@ -24,6 +24,46 @@
 
 ## Critical Violations
 
+### 0. DOUBLE HEADER - ALL APPS ❌❌❌
+
+**THE BIGGEST ISSUE**
+
+**What's Happening:**
+Activity Hub's `AppContainer.tsx` (lines 90-100) renders a header with back button, then embeds the mini-app in an iframe. The mini-app ALSO renders the SDK `AppHeader` component with another back button.
+
+**Result:**
+- Two headers visible
+- Two back buttons
+- Wasted screen space
+- Confusing UX
+
+**Activity Hub AppContainer renders:**
+```tsx
+<div className="ah-app-header">
+  <button className="ah-btn-back" onClick={() => navigate('/lobby')}>
+    ← Back
+  </button>
+  <h2 className="ah-app-title">{app.name}</h2>
+</div>
+
+<iframe src={mini-app-url} />  {/* Mini-app renders ANOTHER header inside */}
+```
+
+**Mini-apps ALL render:**
+```tsx
+<AppHeader title="..." icon="..." />  {/* Second header! */}
+```
+
+**Affected Apps:**
+- Bulls and Cows: Line 160, 165, 178, 215, 237 (GameBoard.tsx)
+- Tic Tac Toe: Line 135 (TicTacToeGame.tsx)
+- Dice: Line 56 (DiceRoller.tsx)
+
+**Solution (Option 1 - APPROVED):**
+Remove `<AppHeader>` from ALL mini-apps. Activity Hub's AppContainer provides the header. Mini-apps should start with their content, not another header.
+
+---
+
 ### 1. Custom CSS Files (ALL APPS) ❌
 
 **Policy:** Apps must NOT create component-specific CSS files.
@@ -80,15 +120,23 @@
 
 ## Inconsistencies by Element
 
-### 1. App Header ✅ CONSISTENT
+### 1. App Header ❌ SHOULD NOT EXIST IN MINI-APPS
 
 | App | Implementation | SDK Component | Issues |
 |-----|---------------|---------------|--------|
-| **Bulls and Cows** | `<AppHeader title="Bulls and Cows" icon="🐂" />` | ✅ Yes | None |
-| **Tic Tac Toe** | `<AppHeader title="Tic-Tac-Toe" icon="⭕" />` | ✅ Yes | None |
-| **Dice** | `<AppHeader title="Rrroll the Dice" icon="🎲" />` | ✅ Yes | None |
+| **Bulls and Cows** | `<AppHeader title="Bulls and Cows" icon="🐂" />` | ✅ Yes | ❌ Should be removed |
+| **Tic Tac Toe** | `<AppHeader title="Tic-Tac-Toe" icon="⭕" />` | ✅ Yes | ❌ Should be removed |
+| **Dice** | `<AppHeader title="Rrroll the Dice" icon="🎲" />` | ✅ Yes | ❌ Should be removed |
 
-**Status:** ✅ All three use SDK AppHeader consistently
+**Status:** ❌ All three incorrectly render headers when Activity Hub already provides one
+
+**Why This Is Wrong:**
+- Activity Hub's AppContainer (lines 90-100) already renders a header
+- Mini-apps are embedded in iframes
+- Results in double header, double back button
+- Wastes screen space
+
+**Fix:** Remove all `<AppHeader>` components from mini-apps. They should start with their game content, not a header.
 
 ---
 
@@ -327,9 +375,10 @@
 
 ### Critical Issues
 
-1. **All three apps have custom CSS files** - Direct violation of CSS policy
-2. **Tic Tac Toe has 15+ inline style violations** - Direct violation
-3. **No toast notification system** - Missing required pattern
+1. **DOUBLE HEADER - ALL APPS** - Activity Hub AND mini-apps both render headers (worst UX issue)
+2. **All three apps have custom CSS files** - Direct violation of CSS policy
+3. **Tic Tac Toe has 15+ inline style violations** - Direct violation
+4. **No toast notification system** - Missing pattern (PAUSED - may not be needed)
 
 ### Consistency Issues
 
@@ -373,18 +422,25 @@
 
 ### Phase 1: Critical Fixes (Immediate)
 
-1. **Remove all custom CSS files**
+1. **Remove AppHeader from ALL mini-apps** ❌❌❌ HIGHEST PRIORITY
+   - Bulls and Cows: Remove `<AppHeader>` and `renderHeader()` function
+   - Tic Tac Toe: Remove `<AppHeader>` component
+   - Dice: Remove `<AppHeader>` component
+   - Mini-apps should start with content, not header
+   - Activity Hub's AppContainer provides the header
+
+2. **Remove all custom CSS files**
    - Move board-specific styles to Activity Hub CSS as `.ah-game-board-*` utilities
    - Delete `dice-board.css`, `bulls-and-cows-board.css`, `tictactoe-board.css`
 
-2. **Remove all inline styles from Tic Tac Toe**
+3. **Remove all inline styles from Tic Tac Toe**
    - Replace with SDK classes
    - Create new SDK classes if needed
 
-3. **Add Toast Notification System to SDK**
-   - `useToast()` hook
-   - `<Toast>` component
-   - Auto-dismiss after 3-5 seconds
+4. **Toast Notification System** (PAUSED - may not be needed in SDK)
+   - Decide: Activity Hub handles its own toasts, or
+   - Mini-apps use temporary banners with auto-dismiss, or
+   - Skip entirely
 
 ### Phase 2: Consistency (Next)
 
