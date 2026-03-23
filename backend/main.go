@@ -93,6 +93,7 @@ func main() {
 	api.HandleFunc("/login", handleLogin).Methods("POST")
 	api.HandleFunc("/login/guest", handleGuestLogin).Methods("POST")
 	api.HandleFunc("/validate", handleValidate).Methods("POST")
+	api.HandleFunc("/sse-token", handleGenerateSSEToken).Methods("POST")
 	api.HandleFunc("/apps", handleGetApps).Methods("GET")
 
 	// User preferences endpoints (require authentication)
@@ -312,6 +313,62 @@ func handleValidate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(response)
+}
+
+// handleGenerateSSEToken - POST /api/sse-token
+// Generates a short-lived (5-minute) token specifically for SSE connections
+// Requires authentication via Authorization header
+func handleGenerateSSEToken(w http.ResponseWriter, r *http.Request) {
+	// Extract and validate JWT from Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" || len(authHeader) < 8 || authHeader[:7] != "Bearer " {
+		http.Error(w, "Missing or invalid authorization header", http.StatusUnauthorized)
+		return
+	}
+
+	token := authHeader[7:]
+
+	// Validate the main JWT token
+	user, err := auth.ResolveToken(db, token)
+	if err != nil {
+		log.Printf("Failed to validate token for SSE token generation: %v", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Parse request body
+	var req struct {
+		AppID  string `json:"appId"`
+		GameID string `json:"gameId"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.AppID == "" || req.GameID == "" {
+		http.Error(w, "Missing appId or gameId", http.StatusBadRequest)
+		return
+	}
+
+	// Generate SSE token
+	sseToken, err := auth.GenerateSSEToken(user.Email, req.AppID, req.GameID)
+	if err != nil {
+		log.Printf("Failed to generate SSE token: %v", err)
+		http.Error(w, "Failed to generate SSE token", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("✅ Generated SSE token for %s (app=%s, game=%s)", user.Email, req.AppID, req.GameID)
+
+	// Return SSE token
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   true,
+		"sseToken":  sseToken,
+		"expiresIn": 300, // 5 minutes in seconds
+	})
 }
 
 // getEnv gets environment variable with fallback to default value
