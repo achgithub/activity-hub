@@ -3,7 +3,7 @@ module identity-shell
 go 1.25
 
 require (
-	github.com/achgithub/activity-hub-auth v0.1.0
+	github.com/achgithub/activity-hub-auth v0.3.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.1
