@@ -40,7 +40,10 @@ export class AwarenessClient {
   async initialize(): Promise<void> {
     console.log('🚀 Initializing awareness client for', this.userId);
     this.startHeartbeat();
-    this.connectPresenceStream();
+    // Connect to presence stream (don't await - let it run in background)
+    this.connectPresenceStream().catch(err => {
+      console.warn('⚠️  Initial presence stream connection failed, will retry:', err);
+    });
   }
 
   // Start heartbeat every 20 seconds
@@ -111,7 +114,7 @@ export class AwarenessClient {
   }
 
   // Connect to presence SSE stream
-  connectPresenceStream(onEvent?: (event: AwarenessEvent) => void): void {
+  async connectPresenceStream(onEvent?: (event: AwarenessEvent) => void): Promise<void> {
     if (onEvent) {
       const listeners = this.listeners.get('presence') || new Set();
       listeners.add(onEvent);
