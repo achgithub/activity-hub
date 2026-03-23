@@ -40,6 +40,8 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   // Redirect to game (not popup - iOS Safari blocks popups from SSE handlers)
   const handleGameStart = useCallback((appId: string, gameId: string) => {
     console.log('🎮 Navigating to game:', appId, 'gameId:', gameId);
+    // Close challenges overlay before navigating
+    setShowChallenges(false);
     // Route through AppContainer which provides the header
     navigate(`/app/${appId}?gameId=${gameId}`);
   }, [navigate]);
