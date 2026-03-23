@@ -162,7 +162,9 @@ func main() {
 	frontendDir := "../frontend/build"
 
 	// Serve static assets (JS, CSS, images)
+	// Support both /static/ (CRA) and /assets/ (Vite)
 	r.PathPrefix("/static/").Handler(http.FileServer(http.Dir(frontendDir)))
+	r.PathPrefix("/assets/").Handler(http.FileServer(http.Dir(frontendDir)))
 
 	// SPA fallback - serve index.html for all other routes (client-side routing)
 	r.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
