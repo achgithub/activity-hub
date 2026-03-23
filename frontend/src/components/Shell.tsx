@@ -28,7 +28,25 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   console.log('🔍 Shell received user:', user);
 
   // Initialize awareness (presence tracking)
-  const { status, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
+  const { status, setStatus, isInitialized: awarenessInitialized } = useAwareness(user.email, user.name);
+
+  // Automatically update status based on current route
+  React.useEffect(() => {
+    if (!awarenessInitialized || !setStatus || user.is_guest) return;
+
+    if (location.pathname === '/lobby' || location.pathname === '/') {
+      // In lobby → online
+      if (status !== 'online') {
+        setStatus('online');
+      }
+    } else if (location.pathname.startsWith('/app/')) {
+      // In a game → in_game
+      if (status !== 'in_game') {
+        setStatus('in_game');
+      }
+    }
+    // For other routes (profile, settings), keep current status
+  }, [location.pathname, awarenessInitialized, setStatus, status, user.is_guest]);
 
   // Fetch apps from registry
   const { apps, loading: appsLoading, refreshApps } = useApps();

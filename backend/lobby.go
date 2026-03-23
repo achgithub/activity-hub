@@ -76,13 +76,50 @@ func generateJWTForUser(email string) (string, error) {
 }
 
 // HandleGetPresence - GET /api/lobby/presence
-// Returns list of all currently online users
+// Returns list of all currently online users (excluding blocked users)
 func HandleGetPresence(w http.ResponseWriter, r *http.Request) {
+	// Get current user email from query param or context
+	currentUser := r.URL.Query().Get("email")
+	if currentUser == "" {
+		// Try to get from context if authenticated
+		if userEmail, ok := r.Context().Value("user_email").(string); ok {
+			currentUser = userEmail
+		}
+	}
+
 	users, err := GetOnlineUsers()
 	if err != nil {
 		log.Printf("Failed to fetch online users: %v", err)
 		http.Error(w, "Failed to fetch online users", http.StatusInternalServerError)
 		return
+	}
+
+	// Filter out blocked users if current user is known
+	if currentUser != "" {
+		emails := make([]string, 0, len(users))
+		for _, user := range users {
+			emails = append(emails, user.Email)
+		}
+
+		filteredEmails, err := FilterBlockedUsers(currentUser, emails)
+		if err != nil {
+			log.Printf("Failed to filter blocked users: %v", err)
+			// Continue with unfiltered list rather than failing
+		} else {
+			// Rebuild users list with only non-blocked users
+			emailSet := make(map[string]bool)
+			for _, email := range filteredEmails {
+				emailSet[email] = true
+			}
+
+			filteredUsers := make([]OnlineUser, 0, len(filteredEmails))
+			for _, user := range users {
+				if emailSet[user.Email] {
+					filteredUsers = append(filteredUsers, user)
+				}
+			}
+			users = filteredUsers
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -204,6 +241,19 @@ func HandleSendChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if users have blocked each other
+	blocked, err := IsUserBlocked(req.FromUser, req.ToUser)
+	if err != nil {
+		log.Printf("Failed to check user blocks: %v", err)
+		http.Error(w, "Failed to verify challenge eligibility", http.StatusInternalServerError)
+		return
+	}
+
+	if blocked {
+		http.Error(w, "Cannot send challenge to this user", http.StatusForbidden)
+		return
+	}
+
 	// Check if recipient is online (direct Redis check, more accurate)
 	recipientOnline, err := IsUserOnline(req.ToUser)
 	if err != nil {
@@ -275,8 +325,26 @@ func HandleSendMultiChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify all invited players are online
+	// Verify all invited players are online and not blocked
 	for _, playerID := range req.PlayerIDs {
+		// Skip self-check
+		if playerID == req.InitiatorID {
+			continue
+		}
+
+		// Check for blocks between initiator and player
+		blocked, err := IsUserBlocked(req.InitiatorID, playerID)
+		if err != nil {
+			log.Printf("Failed to check user blocks: %v", err)
+			http.Error(w, "Failed to verify challenge eligibility", http.StatusInternalServerError)
+			return
+		}
+		if blocked {
+			http.Error(w, fmt.Sprintf("Cannot send challenge to %s", playerID), http.StatusForbidden)
+			return
+		}
+
+		// Check if player is online
 		online, err := IsUserOnline(playerID)
 		if err != nil {
 			http.Error(w, "Failed to verify player status", http.StatusInternalServerError)

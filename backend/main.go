@@ -113,6 +113,11 @@ func main() {
 	lobby.HandleFunc("/challenge/reject", HandleRejectChallenge).Methods("POST")
 	lobby.HandleFunc("/stream", HandleLobbyStream).Methods("GET")
 
+	// User blocking endpoints (require authentication)
+	lobby.HandleFunc("/blocks", GetBlockedUsersHandler).Methods("GET")
+	lobby.HandleFunc("/block", requireAuth(BlockUserHandler)).Methods("POST")
+	lobby.HandleFunc("/unblock", requireAuth(UnblockUserHandler)).Methods("POST")
+
 	// Admin endpoints (require setup_admin role)
 	admin := r.PathPrefix("/api/admin").Subrouter()
 	admin.HandleFunc("/apps", requireSetupAdmin(handleAdminGetApps)).Methods("GET")
