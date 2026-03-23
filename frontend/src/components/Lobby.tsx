@@ -51,7 +51,7 @@ const Lobby: React.FC<LobbyProps> = ({
   // Section collapse state
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
-  // Fetch app preferences (including favorites) on mount
+  // Fetch app preferences (including favorites) and blocked users on mount
   useEffect(() => {
     const fetchPreferences = async () => {
       const token = localStorage.getItem('token');
@@ -78,7 +78,26 @@ const Lobby: React.FC<LobbyProps> = ({
       }
     };
 
+    const fetchBlockedUsers = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${API_BASE}/lobby/blocks`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const blocked = new Set<string>(data.map((b: any) => b.blocked_email));
+          setBlockedUsers(blocked);
+        }
+      } catch (error) {
+        console.error('Failed to fetch blocked users:', error);
+      }
+    };
+
     fetchPreferences();
+    fetchBlockedUsers();
   }, []);
 
   const toggleSection = (sectionId: string) => {
@@ -105,18 +124,44 @@ const Lobby: React.FC<LobbyProps> = ({
     setFavoriteUsers(newFavorites);
   };
 
-  const toggleBlock = (email: string) => {
-    const newBlocked = new Set(blockedUsers);
-    if (newBlocked.has(email)) {
-      newBlocked.delete(email);
-    } else {
-      newBlocked.add(email);
-      // Remove from favorites if blocking
-      const newFavorites = new Set(favoriteUsers);
-      newFavorites.delete(email);
-      setFavoriteUsers(newFavorites);
+  const toggleBlock = async (email: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const isCurrentlyBlocked = blockedUsers.has(email);
+    const endpoint = isCurrentlyBlocked ? '/lobby/unblock' : '/lobby/block';
+
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ blocked_email: email })
+      });
+
+      if (response.ok) {
+        // Update local state
+        const newBlocked = new Set(blockedUsers);
+        if (isCurrentlyBlocked) {
+          newBlocked.delete(email);
+        } else {
+          newBlocked.add(email);
+          // Remove from favorites if blocking
+          const newFavorites = new Set(favoriteUsers);
+          newFavorites.delete(email);
+          setFavoriteUsers(newFavorites);
+        }
+        setBlockedUsers(newBlocked);
+      } else {
+        const error = await response.text();
+        alert(error || `Failed to ${isCurrentlyBlocked ? 'unblock' : 'block'} user`);
+      }
+    } catch (error) {
+      console.error('Failed to toggle block:', error);
+      alert(`Failed to ${isCurrentlyBlocked ? 'unblock' : 'block'} user`);
     }
-    setBlockedUsers(newBlocked);
   };
 
   const toggleFavoriteApp = async (appId: string, e: React.MouseEvent) => {

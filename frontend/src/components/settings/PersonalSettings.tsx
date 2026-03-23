@@ -16,10 +16,37 @@ interface AppPreference {
   customOrder: number | null;
 }
 
+interface BlockedUser {
+  id: number;
+  blocker_email: string;
+  blocked_email: string;
+  created_at: string;
+}
+
 const PersonalSettings: React.FC<PersonalSettingsProps> = ({ apps, onClose, onSave }) => {
   const [appPreferences, setAppPreferences] = useState<AppPreference[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+  const [blockEmail, setBlockEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+
+  const fetchBlockedUsers = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/lobby/blocks`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setBlockedUsers(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch blocked users:', error);
+    }
+  }, []);
 
   const fetchPreferences = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -67,12 +94,11 @@ const PersonalSettings: React.FC<PersonalSettingsProps> = ({ apps, onClose, onSa
     } catch (error) {
       console.error('Failed to fetch preferences:', error);
     }
-    setLoading(false);
   }, [apps]);
 
   useEffect(() => {
-    fetchPreferences();
-  }, [fetchPreferences]);
+    Promise.all([fetchPreferences(), fetchBlockedUsers()]).finally(() => setLoading(false));
+  }, [fetchPreferences, fetchBlockedUsers]);
 
   const handleToggleVisibility = (appId: string) => {
     setAppPreferences(prefs =>
@@ -156,6 +182,65 @@ const PersonalSettings: React.FC<PersonalSettingsProps> = ({ apps, onClose, onSa
     return app ? `${app.icon} ${app.name}` : appId;
   };
 
+  const handleBlockUser = async () => {
+    if (!blockEmail.trim()) {
+      alert('Please enter an email address');
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    setBlockLoading(true);
+    try {
+      const response = await fetch(`${API_BASE}/lobby/block`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ blocked_email: blockEmail.trim() })
+      });
+
+      if (response.ok) {
+        await fetchBlockedUsers();
+        setBlockEmail('');
+      } else {
+        const error = await response.text();
+        alert(error || 'Failed to block user');
+      }
+    } catch (error) {
+      console.error('Failed to block user:', error);
+      alert('Failed to block user');
+    }
+    setBlockLoading(false);
+  };
+
+  const handleUnblockUser = async (blockedEmail: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/lobby/unblock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ blocked_email: blockedEmail })
+      });
+
+      if (response.ok) {
+        await fetchBlockedUsers();
+      } else {
+        alert('Failed to unblock user');
+      }
+    } catch (error) {
+      console.error('Failed to unblock user:', error);
+      alert('Failed to unblock user');
+    }
+  };
+
   return (
     <>
       {loading ? (
@@ -199,6 +284,57 @@ const PersonalSettings: React.FC<PersonalSettingsProps> = ({ apps, onClose, onSa
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Blocked Users Section */}
+            <div className="border-t mt-6 pt-6">
+              <h3 className="text-lg font-semibold mb-3">🚫 Blocked Users</h3>
+              <p className="text-gray-600 mb-4">
+                Blocked users cannot see you online or send you challenges. You also won't see them.
+              </p>
+
+              {/* Block new user */}
+              <div className="ah-flex gap-2 mb-4">
+                <input
+                  type="email"
+                  className="ah-input flex-1"
+                  placeholder="Enter email to block..."
+                  value={blockEmail}
+                  onChange={(e) => setBlockEmail(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleBlockUser()}
+                />
+                <button
+                  className="ah-btn-primary"
+                  onClick={handleBlockUser}
+                  disabled={blockLoading || !blockEmail.trim()}
+                >
+                  {blockLoading ? 'Blocking...' : 'Block'}
+                </button>
+              </div>
+
+              {/* List of blocked users */}
+              {blockedUsers.length === 0 ? (
+                <p className="text-gray-500 text-sm italic">No blocked users</p>
+              ) : (
+                <div className="ah-list">
+                  {blockedUsers.map((block) => (
+                    <div key={block.id} className="ah-list-item ah-flex ah-flex-between">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{block.blocked_email}</div>
+                        <div className="text-xs text-gray-500">
+                          Blocked {new Date(block.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <button
+                        className="ah-btn-outline ah-btn-sm"
+                        onClick={() => handleUnblockUser(block.blocked_email)}
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
