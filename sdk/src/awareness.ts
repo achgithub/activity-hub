@@ -11,6 +11,7 @@ import {
   SessionJoinRequest,
   SessionLeaveRequest,
 } from './types';
+import { requestSSEToken } from './sseToken';
 
 export class AwarenessClient {
   private baseURL: string;
@@ -121,24 +122,33 @@ export class AwarenessClient {
       return; // Already connected
     }
 
-    console.log('📡 Connecting to presence stream');
-    this.presenceStream = new EventSource(`${this.baseURL}/stream`);
+    try {
+      console.log('📡 Requesting SSE token for presence stream');
+      const sseToken = await requestSSEToken('awareness', 'global');
 
-    this.presenceStream.onmessage = (event: MessageEvent) => {
-      try {
-        const awarenessEvent = JSON.parse(event.data) as AwarenessEvent;
-        this.notifyListeners('presence', awarenessEvent);
-      } catch (err) {
-        console.error('❌ Failed to parse presence event:', err);
-      }
-    };
+      console.log('📡 Connecting to presence stream with SSE token');
+      this.presenceStream = new EventSource(`${this.baseURL}/stream?token=${encodeURIComponent(sseToken)}`);
 
-    this.presenceStream.onerror = () => {
-      console.error('❌ Presence stream error');
-      this.disconnectPresenceStream();
-      // Attempt to reconnect after 5 seconds
+      this.presenceStream.onmessage = (event: MessageEvent) => {
+        try {
+          const awarenessEvent = JSON.parse(event.data) as AwarenessEvent;
+          this.notifyListeners('presence', awarenessEvent);
+        } catch (err) {
+          console.error('❌ Failed to parse presence event:', err);
+        }
+      };
+
+      this.presenceStream.onerror = () => {
+        console.error('❌ Presence stream error');
+        this.disconnectPresenceStream();
+        // Attempt to reconnect after 5 seconds
+        setTimeout(() => this.connectPresenceStream(), 5000);
+      };
+    } catch (error) {
+      console.error('❌ Failed to connect to presence stream:', error);
+      // Retry after 5 seconds
       setTimeout(() => this.connectPresenceStream(), 5000);
-    };
+    }
   }
 
   // Disconnect presence stream
@@ -234,7 +244,7 @@ export class AwarenessClient {
   }
 
   // Connect to session SSE stream
-  connectSessionStream(appId: string, sessionId: string, onEvent?: (event: AwarenessEvent) => void): void {
+  async connectSessionStream(appId: string, sessionId: string, onEvent?: (event: AwarenessEvent) => void): Promise<void> {
     const channelId = `session:${appId}:${sessionId}`;
 
     if (onEvent) {
@@ -247,26 +257,35 @@ export class AwarenessClient {
       return; // Already connected
     }
 
-    console.log(`📡 Connecting to session stream: ${channelId}`);
-    const stream = new EventSource(`${this.baseURL}/sessions/stream/${appId}/${sessionId}`);
+    try {
+      console.log(`📡 Requesting SSE token for session stream: ${channelId}`);
+      const sseToken = await requestSSEToken(appId, sessionId);
 
-    stream.onmessage = (event: MessageEvent) => {
-      try {
-        const awarenessEvent = JSON.parse(event.data) as AwarenessEvent;
-        this.notifyListeners(channelId, awarenessEvent);
-      } catch (err) {
-        console.error('❌ Failed to parse session event:', err);
-      }
-    };
+      console.log(`📡 Connecting to session stream: ${channelId}`);
+      const stream = new EventSource(`${this.baseURL}/sessions/stream/${appId}/${sessionId}?token=${encodeURIComponent(sseToken)}`);
 
-    stream.onerror = () => {
-      console.error(`❌ Session stream error: ${channelId}`);
-      this.disconnectSessionStream(appId, sessionId);
-      // Attempt to reconnect after 5 seconds
+      stream.onmessage = (event: MessageEvent) => {
+        try {
+          const awarenessEvent = JSON.parse(event.data) as AwarenessEvent;
+          this.notifyListeners(channelId, awarenessEvent);
+        } catch (err) {
+          console.error('❌ Failed to parse session event:', err);
+        }
+      };
+
+      stream.onerror = () => {
+        console.error(`❌ Session stream error: ${channelId}`);
+        this.disconnectSessionStream(appId, sessionId);
+        // Attempt to reconnect after 5 seconds
+        setTimeout(() => this.connectSessionStream(appId, sessionId), 5000);
+      };
+
+      this.sessionStreams.set(channelId, stream);
+    } catch (error) {
+      console.error(`❌ Failed to connect to session stream:`, error);
+      // Retry after 5 seconds
       setTimeout(() => this.connectSessionStream(appId, sessionId), 5000);
-    };
-
-    this.sessionStreams.set(channelId, stream);
+    }
   }
 
   // Disconnect session stream

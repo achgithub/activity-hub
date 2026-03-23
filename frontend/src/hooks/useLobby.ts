@@ -249,40 +249,79 @@ export function useLobby(userEmail: string, options?: UseLobbyOptions) {
 
   // Setup SSE connection
   useEffect(() => {
-    const eventSource = new EventSource(`${API_BASE}/lobby/stream?email=${encodeURIComponent(userEmail)}`);
-    eventSourceRef.current = eventSource;
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === 'challenge_received') {
-        // Refresh challenges when notified
-        fetchChallenges();
-      } else if (data.type === 'accepted' || data.type === 'rejected') {
-        // Refresh when challenge is responded to
-        fetchChallenges();
-        fetchSentChallenges();
-      } else if (data.type === 'challenge_update') {
-        // Multi-player challenge acceptance progress
-        fetchChallenges();
-        fetchSentChallenges();
-      } else if (data.type === 'presence_update') {
-        // Refresh online users and sent challenges (removes offline users)
-        fetchOnlineUsers();
-        fetchSentChallenges();
-      } else if (data.type === 'game_started') {
-        // Game has been created - navigate to it
-        // Use ref to avoid stale closure
-        if (onGameStartRef.current && data.appId && data.gameId) {
-          console.log('🎮 game_started received, navigating to:', data.appId, data.gameId);
-          onGameStartRef.current(data.appId, data.gameId);
+    const setupSSE = async () => {
+      try {
+        // Request SSE token
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found for SSE');
+          return;
         }
+
+        const response = await fetch(`${API_BASE}/sse-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            appId: 'lobby',
+            gameId: 'global',
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to get SSE token:', response.statusText);
+          return;
+        }
+
+        const data = await response.json();
+        const sseToken = data.sseToken;
+
+        // Create EventSource with SSE token
+        const eventSource = new EventSource(
+          `${API_BASE}/lobby/stream?email=${encodeURIComponent(userEmail)}&token=${encodeURIComponent(sseToken)}`
+        );
+        eventSourceRef.current = eventSource;
+
+        eventSource.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'challenge_received') {
+            // Refresh challenges when notified
+            fetchChallenges();
+          } else if (data.type === 'accepted' || data.type === 'rejected') {
+            // Refresh when challenge is responded to
+            fetchChallenges();
+            fetchSentChallenges();
+          } else if (data.type === 'challenge_update') {
+            // Multi-player challenge acceptance progress
+            fetchChallenges();
+            fetchSentChallenges();
+          } else if (data.type === 'presence_update') {
+            // Refresh online users and sent challenges (removes offline users)
+            fetchOnlineUsers();
+            fetchSentChallenges();
+          } else if (data.type === 'game_started') {
+            // Game has been created - navigate to it
+            // Use ref to avoid stale closure
+            if (onGameStartRef.current && data.appId && data.gameId) {
+              console.log('🎮 game_started received, navigating to:', data.appId, data.gameId);
+              onGameStartRef.current(data.appId, data.gameId);
+            }
+          }
+        };
+
+        eventSource.onerror = () => {
+          console.warn('SSE connection lost, will auto-reconnect');
+        };
+      } catch (error) {
+        console.error('Failed to setup SSE connection:', error);
       }
     };
 
-    eventSource.onerror = () => {
-      console.warn('SSE connection lost, will auto-reconnect');
-    };
+    // Start SSE setup
+    setupSSE();
 
     // Initial data fetch
     updatePresence('online');

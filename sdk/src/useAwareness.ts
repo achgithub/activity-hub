@@ -197,6 +197,8 @@ export function useSSE<T>(
   url: string | null,
   onEvent: (event: T) => void,
   options?: {
+    appId?: string;
+    gameId?: string;
     reconnectInterval?: number;
     maxReconnectAttempts?: number;
   }
@@ -209,48 +211,76 @@ export function useSSE<T>(
   const maxAttempts = options?.maxReconnectAttempts ?? 5;
   const reconnectInterval = options?.reconnectInterval ?? 5000;
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!url) return;
 
     if (streamRef.current) {
       streamRef.current.close();
     }
 
-    console.log(`📡 Connecting to SSE: ${url}`);
-    const stream = new EventSource(url);
+    try {
+      let finalUrl = url;
 
-    stream.onmessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data) as T;
-        onEvent(data);
-        setIsConnected(true);
-        setError(null);
-        reconnectAttemptsRef.current = 0;
-      } catch (err) {
-        console.error('Failed to parse SSE event:', err);
+      // If appId and gameId are provided, request SSE token
+      if (options?.appId && options?.gameId) {
+        console.log(`📡 Requesting SSE token for ${options.appId}/${options.gameId}`);
+        const { requestSSEToken } = await import('./sseToken');
+        const sseToken = await requestSSEToken(options.appId, options.gameId);
+
+        // Add token to URL
+        const separator = url.includes('?') ? '&' : '?';
+        finalUrl = `${url}${separator}token=${encodeURIComponent(sseToken)}`;
       }
-    };
 
-    stream.onerror = () => {
-      console.error(`❌ SSE error: ${url}`);
-      stream.close();
+      console.log(`📡 Connecting to SSE: ${finalUrl}`);
+      const stream = new EventSource(finalUrl);
+
+      stream.onmessage = (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data) as T;
+          onEvent(data);
+          setIsConnected(true);
+          setError(null);
+          reconnectAttemptsRef.current = 0;
+        } catch (err) {
+          console.error('Failed to parse SSE event:', err);
+        }
+      };
+
+      stream.onerror = () => {
+        console.error(`❌ SSE error: ${url}`);
+        stream.close();
+        setIsConnected(false);
+        setError(new Error('SSE connection error'));
+
+        // Attempt to reconnect
+        if (reconnectAttemptsRef.current < maxAttempts) {
+          reconnectAttemptsRef.current++;
+          console.log(`🔄 Reconnecting (attempt ${reconnectAttemptsRef.current}/${maxAttempts})...`);
+          reconnectTimerRef.current = window.setTimeout(() => {
+            connect();
+          }, reconnectInterval);
+        } else {
+          setError(new Error('Max reconnection attempts reached'));
+        }
+      };
+
+      streamRef.current = stream;
+    } catch (err) {
+      console.error('Failed to establish SSE connection:', err);
+      setError(err as Error);
       setIsConnected(false);
-      setError(new Error('SSE connection error'));
 
-      // Attempt to reconnect
+      // Attempt to reconnect on token request failure
       if (reconnectAttemptsRef.current < maxAttempts) {
         reconnectAttemptsRef.current++;
-        console.log(`🔄 Reconnecting (attempt ${reconnectAttemptsRef.current}/${maxAttempts})...`);
+        console.log(`🔄 Reconnecting after error (attempt ${reconnectAttemptsRef.current}/${maxAttempts})...`);
         reconnectTimerRef.current = window.setTimeout(() => {
           connect();
         }, reconnectInterval);
-      } else {
-        setError(new Error('Max reconnection attempts reached'));
       }
-    };
-
-    streamRef.current = stream;
-  }, [url, onEvent, maxAttempts, reconnectInterval]);
+    }
+  }, [url, onEvent, maxAttempts, reconnectInterval, options?.appId, options?.gameId]);
 
   // Connect on mount
   useEffect(() => {

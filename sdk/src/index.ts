@@ -10,6 +10,7 @@ import './styles/loadSharedCSS';
 export { AwarenessClient } from './awareness';
 export { useAwareness, useSessionAwareness, useSSE } from './useAwareness';
 export { useActivityHubContext } from './useActivityHubContext';
+export { requestSSEToken, createSecureEventSource } from './sseToken';
 
 // UI Components
 export { AppHeader } from './components/AppHeader';
