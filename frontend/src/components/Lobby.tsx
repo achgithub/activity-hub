@@ -6,7 +6,7 @@ import GameChallengeModal from './GameChallengeModal';
 
 interface LobbyProps {
   apps: AppDefinition[];
-  onAppClick: (appId: string) => void;
+  onAppClick: (appId: string, gameId?: string) => void;
   userEmail: string;
   userName: string;
   onlineUsers: UserPresence[];
@@ -267,8 +267,8 @@ const Lobby: React.FC<LobbyProps> = ({
           const result = await response.json();
           // Launch app with gameId (use gameId from response, or game.id as fallback)
           const gameId = result.gameId || result.game?.id || result.id;
-          const appUrl = `/api/apps/${appId}/proxy?gameId=${gameId}&userId=${userEmail}&userName=${encodeURIComponent(userName)}&token=${token}`;
-          window.location.href = appUrl;
+          // Route through AppContainer which provides the header
+          onAppClick(appId, gameId);
         } else {
           // Fallback: just launch app
           onAppClick(appId);

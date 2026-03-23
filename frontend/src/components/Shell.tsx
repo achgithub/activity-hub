@@ -4,7 +4,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { User } from '../types';
 import { useAwareness } from 'activity-hub-sdk';
 import { useLobby } from '../hooks/useLobby';
-import { useApps, buildAppUrl } from '../hooks/useApps';
+import { useApps } from '../hooks/useApps';
 import Lobby from './Lobby';
 import AppContainer from './AppContainer';
 import ChallengeToast from './ChallengeToast';
@@ -38,19 +38,10 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
 
   // Redirect to game (not popup - iOS Safari blocks popups from SSE handlers)
   const handleGameStart = useCallback((appId: string, gameId: string) => {
-    const app = apps.find(a => a.id === appId);
-    if (app) {
-      const gameUrl = buildAppUrl(app, {
-        userId: user.email,
-        userName: user.name,
-        isAdmin: user.is_admin,
-        gameId,
-      });
-      console.log('🎮 Redirecting to game:', gameUrl);
-      // Use location.href to redirect entirely - leaves the shell
-      window.location.href = gameUrl;
-    }
-  }, [apps, user.email, user.name, user.is_admin]);
+    console.log('🎮 Navigating to game:', appId, 'gameId:', gameId);
+    // Route through AppContainer which provides the header
+    navigate(`/app/${appId}?gameId=${gameId}`);
+  }, [navigate]);
 
   const {
     onlineUsers,
@@ -68,9 +59,10 @@ const Shell: React.FC<ShellProps> = ({ user, onLogout, onEndImpersonation }) => 
   const notificationCount = receivedChallenges.filter(c => c.status === 'pending').length;
 
   // Navigate to app container (which launches the app via Unix socket)
-  const handleAppClick = useCallback((appId: string) => {
-    console.log('🎮 Navigating to app:', appId);
-    navigate(`/app/${appId}`);
+  const handleAppClick = useCallback((appId: string, gameId?: string) => {
+    console.log('🎮 Navigating to app:', appId, gameId ? `with gameId: ${gameId}` : '');
+    const url = gameId ? `/app/${appId}?gameId=${gameId}` : `/app/${appId}`;
+    navigate(url);
   }, [navigate]);
 
   const handleDismissToast = useCallback(() => {
