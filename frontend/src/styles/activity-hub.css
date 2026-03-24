@@ -932,10 +932,10 @@ pre {
 /* Modal layout utilities */
 .ah-modal--settings {
   position: fixed;
-  top: 4rem;
+  top: 6rem;
   left: 50%;
   transform: translateX(-50%) !important;
-  max-height: calc(100vh - 8rem);
+  max-height: calc(100vh - 12rem);
   max-width: 56rem;
   width: 90vw;
   display: flex;
