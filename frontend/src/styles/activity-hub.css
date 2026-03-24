@@ -932,21 +932,25 @@ pre {
 /* Modal layout utilities */
 .ah-modal--settings {
   position: fixed;
-  top: 2rem;
+  top: 4rem;
   left: 50%;
-  transform: translateX(-50%);
-  max-height: calc(100vh - 4rem);
-  max-width: 90vw;
-  width: auto;
+  transform: translateX(-50%) !important;
+  max-height: calc(100vh - 8rem);
+  max-width: 56rem;
+  width: 90vw;
   display: flex;
   flex-direction: column;
   z-index: 99999;
+  padding: 0;
 }
 
 .ah-modal-tabs {
   flex-shrink: 0;
   overflow-x: auto;
   border-bottom: 1px solid #e5e7eb;
+  background: white;
+  padding: 0.5rem 1.5rem 0 1.5rem;
+  border-radius: 8px 8px 0 0;
 }
 
 .ah-modal-content-scroll {
@@ -954,6 +958,8 @@ pre {
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
+  background: white;
+  border-radius: 0 0 8px 8px;
 }
 
 /* ──────────────────────────────────────────────────────────
