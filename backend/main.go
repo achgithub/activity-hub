@@ -122,6 +122,7 @@ func main() {
 	admin := r.PathPrefix("/api/admin").Subrouter()
 	admin.HandleFunc("/apps", requireSetupAdmin(handleAdminGetApps)).Methods("GET")
 	admin.HandleFunc("/apps/{id}", requireSetupAdmin(handleAdminUpdateApp)).Methods("PUT")
+	admin.HandleFunc("/apps/{id}", requireSetupAdmin(handleAdminDeleteApp)).Methods("DELETE")
 	admin.HandleFunc("/apps/{id}/{action:enable|disable}", requireSetupAdmin(handleAdminToggleApp)).Methods("POST")
 
 	// Impersonation endpoints (require super_user role)

@@ -351,8 +351,9 @@ CREATE INDEX idx_app_manifests_registered_at ON app_manifests(registered_at DESC
 --   4. Email verified, account active
 
 -- Insert bootstrap admin user (verified, with password 123456)
+-- Note: Legacy 'roles' column is deprecated - all roles now in user_roles table
 INSERT INTO users (email, name, code_hash, is_admin, roles, email_verified, verified_at) VALUES
-    ('admin@activity-hub.com', 'Admin', '$2a$10$bz7aFH/Yx4h7zyKLa6.cXe4x/L1pFWrU9.rEqf6TK7j2bJ8w7dEyO', TRUE, ARRAY['super_user', 'setup_admin'], TRUE, CURRENT_TIMESTAMP)
+    ('admin@activity-hub.com', 'Admin', '$2a$10$bz7aFH/Yx4h7zyKLa6.cXe4x/L1pFWrU9.rEqf6TK7j2bJ8w7dEyO', TRUE, '{}', TRUE, CURRENT_TIMESTAMP)
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert app definitions

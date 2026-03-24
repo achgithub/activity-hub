@@ -98,7 +98,12 @@ export function useActivityHubContext(): ActivityHubContext {
           return roles.some((r: string) => r.endsWith(`:${rolePattern}`));
         };
 
-        const isAdmin = ah_roles.length > 0 || roles.some((r: string) => r === 'ah_g_super' || r === 'ah_g_admin');
+        // Standardized admin check: has any ah_g_* group OR ah_r_user_manage OR ah_r_app_control
+        const isAdmin = roles.some((r: string) =>
+          r.startsWith('ah_g_') ||
+          r === 'ah_r_user_manage' ||
+          r === 'ah_r_app_control'
+        );
 
         setContext({
           user: {

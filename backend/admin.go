@@ -279,3 +279,45 @@ func handleAdminToggleApp(w http.ResponseWriter, r *http.Request) {
 		"message": "App " + status + " successfully",
 	})
 }
+
+// handleAdminDeleteApp deletes an app and all related data
+func handleAdminDeleteApp(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	appID := vars["id"]
+
+	// First, clean up app-specific user roles
+	// app_roles will be cascade deleted, but user_roles needs manual cleanup
+	_, err := db.Exec("DELETE FROM user_roles WHERE role_id LIKE $1", appID+":%")
+	if err != nil {
+		log.Printf("Error deleting app user roles: %v", err)
+		http.Error(w, "Failed to delete app user roles", http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the application (CASCADE will delete app_roles, app_manifests, challenges, etc.)
+	result, err := db.Exec("DELETE FROM applications WHERE id = $1", appID)
+	if err != nil {
+		log.Printf("Error deleting app: %v", err)
+		http.Error(w, "Failed to delete app", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		http.Error(w, "App not found", http.StatusNotFound)
+		return
+	}
+
+	// Reload app registry
+	if err := ReloadAppRegistry(); err != nil {
+		log.Printf("Warning: Failed to reload app registry: %v", err)
+	}
+
+	log.Printf("Deleted app: %s", appID)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "App deleted successfully",
+	})
+}

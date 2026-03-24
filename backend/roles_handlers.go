@@ -28,12 +28,27 @@ func HandleGetUserContext(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch user's roles
+	// Fetch user's roles with group expansion
+	// This query returns:
+	// 1. Direct role assignments (ah_r_*, ah_g_*, app:role)
+	// 2. Roles granted by groups (if user has ah_g_* group, expand to underlying ah_r_* roles)
 	var roles pq.StringArray
 	err = db.QueryRow(`
-		SELECT COALESCE(array_agg(role_id), ARRAY[]::text[])
-		FROM user_roles
-		WHERE user_email = $1
+		SELECT COALESCE(array_agg(DISTINCT role_or_expanded), ARRAY[]::text[])
+		FROM (
+			-- Get direct role assignments (includes groups themselves)
+			SELECT role_id as role_or_expanded
+			FROM user_roles
+			WHERE user_email = $1
+
+			UNION
+
+			-- Get roles granted by groups (expand ah_g_* to ah_r_*)
+			SELECT gr.role_id as role_or_expanded
+			FROM user_roles ur
+			JOIN ah_group_roles gr ON ur.role_id = gr.group_id
+			WHERE ur.user_email = $1
+		) AS all_roles
 	`, user.Email).Scan(&roles)
 	if err != nil {
 		log.Printf("Failed to fetch user roles: %v", err)
@@ -41,10 +56,16 @@ func HandleGetUserContext(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user is admin (has any ah_g_* group or ah_r_app_control)
+	// Check if user is admin (standardized definition across all layers)
+	// Admin = has any ah_g_* group OR ah_r_user_manage OR ah_r_app_control
 	isAdmin := false
 	for _, role := range roles {
-		if role == "ah_g_super" || role == "ah_g_admin" || role == "ah_r_app_control" {
+		if len(role) >= 5 && role[:5] == "ah_g_" {
+			// Any group makes you admin
+			isAdmin = true
+			break
+		}
+		if role == "ah_r_user_manage" || role == "ah_r_app_control" {
 			isAdmin = true
 			break
 		}
@@ -321,6 +342,8 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 		isDefault := role["isDefault"].(bool)
 		isRestricted := role["isRestricted"].(bool)
 
+		fullRoleId := req.Id + ":" + roleId
+
 		_, err = db.Exec(`
 			INSERT INTO app_roles (app_id, role_id, label, description, is_default, is_restricted)
 			VALUES ($1, $2, $3, $4, $5, $6)
@@ -329,10 +352,30 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 				description = EXCLUDED.description,
 				is_default = EXCLUDED.is_default,
 				is_restricted = EXCLUDED.is_restricted
-		`, req.Id, req.Id+":"+roleId, label, description, isDefault, isRestricted)
+		`, req.Id, fullRoleId, label, description, isDefault, isRestricted)
 
 		if err != nil {
 			log.Printf("Failed to insert app role: %v", err)
+			continue
+		}
+
+		// Auto-assign default roles to all users
+		if isDefault {
+			_, err = db.Exec(`
+				INSERT INTO user_roles (user_email, role_id, assigned_by, notes)
+				SELECT email, $1, 'system', 'Auto-assigned default role'
+				FROM users
+				WHERE NOT EXISTS (
+					SELECT 1 FROM user_roles
+					WHERE user_email = users.email AND role_id = $1
+				)
+			`, fullRoleId)
+
+			if err != nil {
+				log.Printf("Failed to auto-assign default role %s: %v", fullRoleId, err)
+			} else {
+				log.Printf("Auto-assigned default role %s to all users", fullRoleId)
+			}
 		}
 	}
 
