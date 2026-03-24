@@ -55,6 +55,51 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps, onClose, onSave
     }
   };
 
+  const handleDeleteApp = async (appId: string, appName: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to DELETE "${appName}"?\n\n` +
+      `This will permanently remove:\n` +
+      `- The app from the registry\n` +
+      `- All app-specific roles\n` +
+      `- All user role assignments for this app\n` +
+      `- All related data\n\n` +
+      `This action CANNOT be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token');
+      }
+
+      const response = await fetch(`${API_BASE}/admin/apps/${appId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete app');
+      }
+
+      alert(`App "${appName}" has been deleted successfully`);
+      onSave();
+    } catch (err) {
+      console.error('Failed to delete app:', err);
+      alert(`Failed to delete app: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const enabledApps = apps.filter(app => appStates.get(app.id) !== false);
   const disabledApps = apps.filter(app => appStates.get(app.id) === false);
 
@@ -82,13 +127,23 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps, onClose, onSave
                     </div>
                     <div className="text-sm text-gray-500">{app.description}</div>
                   </div>
-                  <button
-                    className="ah-btn-danger ah-btn-sm"
-                    onClick={() => handleToggleApp(app.id)}
-                    disabled={loading}
-                  >
-                    Disable
-                  </button>
+                  <div className="ah-flex gap-2">
+                    <button
+                      className="ah-btn-outline ah-btn-sm"
+                      onClick={() => handleToggleApp(app.id)}
+                      disabled={loading}
+                    >
+                      Disable
+                    </button>
+                    <button
+                      className="ah-btn-danger ah-btn-sm"
+                      onClick={() => handleDeleteApp(app.id, app.name)}
+                      disabled={loading}
+                      title="Permanently delete this app"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -112,13 +167,23 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps, onClose, onSave
                     </div>
                     <div className="text-sm text-gray-500">{app.description}</div>
                   </div>
-                  <button
-                    className="ah-btn-primary ah-btn-sm"
-                    onClick={() => handleToggleApp(app.id)}
-                    disabled={loading}
-                  >
-                    Enable
-                  </button>
+                  <div className="ah-flex gap-2">
+                    <button
+                      className="ah-btn-primary ah-btn-sm"
+                      onClick={() => handleToggleApp(app.id)}
+                      disabled={loading}
+                    >
+                      Enable
+                    </button>
+                    <button
+                      className="ah-btn-danger ah-btn-sm"
+                      onClick={() => handleDeleteApp(app.id, app.name)}
+                      disabled={loading}
+                      title="Permanently delete this app"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
