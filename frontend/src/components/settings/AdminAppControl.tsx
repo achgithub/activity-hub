@@ -9,18 +9,51 @@ interface AdminAppControlProps {
   onSave: () => void;
 }
 
-const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps, onClose, onSave }) => {
+const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps: _apps, onClose, onSave }) => {
+  const [allApps, setAllApps] = useState<AppDefinition[]>([]);
   const [appStates, setAppStates] = useState<Map<string, boolean>>(new Map());
   const [loading, setLoading] = useState(false);
+  const [fetchingApps, setFetchingApps] = useState(true);
 
+  // Fetch ALL apps from admin endpoint (includes disabled apps)
   useEffect(() => {
-    // Initialize app states - all apps start as enabled
-    const states = new Map<string, boolean>();
-    apps.forEach(app => {
-      states.set(app.id, true);
-    });
-    setAppStates(states);
-  }, [apps]);
+    const fetchAllApps = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token');
+        }
+
+        const response = await fetch(`${API_BASE}/admin/apps`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch apps');
+        }
+
+        const data = await response.json();
+        setAllApps(data.apps || []);
+
+        // Initialize app states from fetched data
+        const states = new Map<string, boolean>();
+        (data.apps || []).forEach((app: AppDefinition) => {
+          states.set(app.id, app.enabled);
+        });
+        setAppStates(states);
+      } catch (err) {
+        console.error('Failed to fetch all apps:', err);
+        alert('Failed to load apps list');
+      } finally {
+        setFetchingApps(false);
+      }
+    };
+
+    fetchAllApps();
+  }, []);
 
   const handleToggleApp = async (appId: string) => {
     setLoading(true);
@@ -86,12 +119,20 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps, onClose, onSave
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        const data = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(data.message || 'Failed to delete app');
       }
 
+      // Remove app from local state
+      setAllApps(prev => prev.filter(app => app.id !== appId));
+      setAppStates(prev => {
+        const newStates = new Map(prev);
+        newStates.delete(appId);
+        return newStates;
+      });
+
       alert(`App "${appName}" has been deleted successfully`);
-      onSave();
+      onSave(); // Refresh parent app list
     } catch (err) {
       console.error('Failed to delete app:', err);
       alert(`Failed to delete app: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -100,14 +141,33 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps, onClose, onSave
     }
   };
 
-  const enabledApps = apps.filter(app => appStates.get(app.id) !== false);
-  const disabledApps = apps.filter(app => appStates.get(app.id) === false);
+  const enabledApps = allApps.filter(app => appStates.get(app.id) !== false);
+  const disabledApps = allApps.filter(app => appStates.get(app.id) === false);
+
+  if (fetchingApps) {
+    return (
+      <>
+        <div className="ah-modal-body">
+          <div className="text-center py-8">
+            <p className="text-gray-500">Loading apps...</p>
+          </div>
+        </div>
+        <div className="ah-modal-footer ah-flex ah-flex-between">
+          <div />
+          <button className="ah-btn-outline" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <div className="ah-modal-body">
         <p className="text-gray-600 mb-6">
           Enable or disable apps for all users. Disabled apps will be hidden from the lobby.
+          Delete apps to permanently remove them and all related data.
         </p>
 
         {/* Enabled Apps */}
