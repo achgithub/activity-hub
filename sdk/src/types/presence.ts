@@ -2,7 +2,7 @@
  * User Presence and Status Types
  */
 
-export type UserStatus = 'online' | 'in_game' | 'away';
+export type UserStatus = 'online' | 'in_game' | 'away' | 'offline' | 'do_not_disturb';
 
 export interface UserPresence {
   email: string;
