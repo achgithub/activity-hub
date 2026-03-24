@@ -41,7 +41,7 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps: _apps, onClose,
         // Initialize app states from fetched data
         const states = new Map<string, boolean>();
         (data.apps || []).forEach((app: AppDefinition) => {
-          states.set(app.id, app.enabled);
+          states.set(app.id, app.enabled ?? true);
         });
         setAppStates(states);
       } catch (err) {

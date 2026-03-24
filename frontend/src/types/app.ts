@@ -18,6 +18,7 @@ export interface AppDefinition {
   minPlayers?: number; // Minimum players for multi-player games (e.g., 3)
   maxPlayers?: number; // Maximum players for multi-player games (e.g., 6)
   guestAccessible?: boolean; // True if guests can access this app
+  enabled?: boolean; // Is app enabled/visible to users (admin only)
   displayOrder?: number; // Display order for sorting
 }
 
