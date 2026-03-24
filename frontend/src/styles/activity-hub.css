@@ -932,6 +932,32 @@ pre {
   justify-content: flex-end;
 }
 
+/* Modal positioning variants */
+.ah-modal-centered {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
+  max-height: calc(100vh - 4rem);
+  max-width: 90vw;
+  width: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.ah-modal-tabs {
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.ah-modal-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
 /* ──────────────────────────────────────────────────────────
    STATUS INDICATORS
    ────────────────────────────────────────────────────────── */

@@ -37,31 +37,11 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 99999,
-      }}
+      className="ah-modal-overlay"
       onClick={onClose}
     >
       <div
-        className="ah-modal ah-modal--large"
-        style={{
-          position: 'fixed',
-          top: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 99999,
-          maxHeight: 'calc(100vh - 4rem)',
-          maxWidth: '90vw',
-          width: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+        className="ah-modal ah-modal--large ah-modal-centered"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="ah-modal-header ah-flex ah-flex-between">
@@ -72,10 +52,6 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
         {/* Tabs */}
         <div
           className="ah-modal-tabs ah-flex gap-0 border-b border-gray-200"
-          style={{
-            flexShrink: 0,
-            overflowX: 'auto',
-          }}
         >
           <button
             className={`px-4 py-3 font-medium border-b-2 transition ${
@@ -138,14 +114,7 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
         </div>
 
         {/* Tab Content - Scrollable Container */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            minHeight: 0,
-          }}
-        >
+        <div className="ah-modal-content-scroll">
           {activeTab === 'personal' && (
             <PersonalSettings
               apps={apps}
