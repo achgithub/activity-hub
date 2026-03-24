@@ -64,9 +64,9 @@ func requireSetupAdmin(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Check for setup_admin role
-		if !user.HasRole("setup_admin") {
-			http.Error(w, "Forbidden - setup_admin role required", http.StatusForbidden)
+		// Check if user is admin using isUserAdmin helper
+		if !isUserAdmin(user.Email) {
+			http.Error(w, "Forbidden - admin role required", http.StatusForbidden)
 			return
 		}
 
@@ -98,9 +98,17 @@ func requireSuperUser(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Check for super_user role
-		if !user.HasRole("super_user") {
-			http.Error(w, "Forbidden - super_user role required", http.StatusForbidden)
+		// Check for ah_g_super group (replaces legacy super_user role)
+		// Query user_roles table to check for ah_g_super
+		var hasSuperGroup bool
+		err = db.QueryRow(`
+			SELECT EXISTS(
+				SELECT 1 FROM user_roles
+				WHERE user_email = $1 AND role_id = 'ah_g_super'
+			)
+		`, user.Email).Scan(&hasSuperGroup)
+		if err != nil || !hasSuperGroup {
+			http.Error(w, "Forbidden - super admin role required", http.StatusForbidden)
 			return
 		}
 
