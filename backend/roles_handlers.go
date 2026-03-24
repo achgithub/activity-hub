@@ -363,13 +363,13 @@ func HandleRegisterApp(w http.ResponseWriter, r *http.Request) {
 		if isDefault {
 			_, err = db.Exec(`
 				INSERT INTO user_roles (user_email, role_id, assigned_by, notes)
-				SELECT email, $1, 'system', 'Auto-assigned default role'
+				SELECT email, $1::text, 'system', 'Auto-assigned default role'
 				FROM users
 				WHERE NOT EXISTS (
 					SELECT 1 FROM user_roles
-					WHERE user_email = users.email AND role_id = $1
+					WHERE user_email = users.email AND role_id = $2::text
 				)
-			`, fullRoleId)
+			`, fullRoleId, fullRoleId)
 
 			if err != nil {
 				log.Printf("Failed to auto-assign default role %s: %v", fullRoleId, err)
