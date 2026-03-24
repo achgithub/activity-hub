@@ -865,10 +865,11 @@ pre {
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  z-index: 50;
+  z-index: 99999;
   backdrop-filter: blur(2px);
+  padding-top: 2rem;
 }
 
 .ah-modal {
@@ -932,13 +933,8 @@ pre {
   justify-content: flex-end;
 }
 
-/* Modal positioning variants */
-.ah-modal-centered {
-  position: fixed;
-  top: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 99999;
+/* Modal layout utilities */
+.ah-modal--settings {
   max-height: calc(100vh - 4rem);
   max-width: 90vw;
   width: auto;

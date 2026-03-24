@@ -41,7 +41,7 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
       onClick={onClose}
     >
       <div
-        className="ah-modal ah-modal--large ah-modal-centered"
+        className="ah-modal ah-modal--large ah-modal--settings"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="ah-modal-header ah-flex ah-flex-between">
