@@ -15,9 +15,25 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState<'personal' | 'registration' | 'control' | 'users' | 'roles'>('personal');
+  const [editApp, setEditApp] = useState<any | null>(null);
 
   // Check if user is admin
   const isAdmin = user.roles?.some(r => r.startsWith('ah_')) || user.is_admin || false;
+
+  const handleEditApp = (app: any) => {
+    setEditApp(app);
+    setActiveTab('registration');
+  };
+
+  const handleCloseRegistration = () => {
+    setEditApp(null);
+    onClose();
+  };
+
+  const handleSaveRegistration = () => {
+    setEditApp(null);
+    onSave();
+  };
 
   return (
     <div
@@ -140,8 +156,9 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
 
           {activeTab === 'registration' && isAdmin && (
             <AdminAppRegistration
-              onClose={onClose}
-              onSave={onSave}
+              onClose={handleCloseRegistration}
+              onSave={handleSaveRegistration}
+              editApp={editApp}
             />
           )}
 
@@ -150,6 +167,7 @@ const Settings: React.FC<SettingsProps> = ({ apps, user, onClose, onSave }) => {
               apps={apps}
               onClose={onClose}
               onSave={onSave}
+              onEditApp={handleEditApp}
             />
           )}
 

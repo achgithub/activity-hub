@@ -7,9 +7,10 @@ interface AdminAppControlProps {
   apps: AppDefinition[];
   onClose: () => void;
   onSave: () => void;
+  onEditApp?: (app: any) => void;
 }
 
-const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps: _apps, onClose, onSave }) => {
+const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps: _apps, onClose, onSave, onEditApp }) => {
   const [allApps, setAllApps] = useState<AppDefinition[]>([]);
   const [appStates, setAppStates] = useState<Map<string, boolean>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -188,6 +189,16 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps: _apps, onClose,
                     <div className="text-sm text-gray-500">{app.description}</div>
                   </div>
                   <div className="ah-flex gap-2">
+                    {onEditApp && (
+                      <button
+                        className="ah-btn-primary ah-btn-sm"
+                        onClick={() => onEditApp(app)}
+                        disabled={loading}
+                        title="Edit app configuration"
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       className="ah-btn-outline ah-btn-sm"
                       onClick={() => handleToggleApp(app.id)}
@@ -228,6 +239,16 @@ const AdminAppControl: React.FC<AdminAppControlProps> = ({ apps: _apps, onClose,
                     <div className="text-sm text-gray-500">{app.description}</div>
                   </div>
                   <div className="ah-flex gap-2">
+                    {onEditApp && (
+                      <button
+                        className="ah-btn-outline ah-btn-sm"
+                        onClick={() => onEditApp(app)}
+                        disabled={loading}
+                        title="Edit app configuration"
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       className="ah-btn-primary ah-btn-sm"
                       onClick={() => handleToggleApp(app.id)}

@@ -5,6 +5,21 @@ const API_BASE = `http://${window.location.hostname}:3001/api`;
 interface AdminAppRegistrationProps {
   onClose: () => void;
   onSave: () => void;
+  editApp?: {
+    id: string;
+    name: string;
+    icon: string;
+    category: string;
+    description: string;
+    realtime: string;
+    minPlayers?: number;
+    maxPlayers?: number;
+    binaryPath?: string;
+    staticPath?: string;
+    guestAccessible?: boolean;
+    displayOrder?: number;
+    requiredRoles?: string[];
+  } | null;
 }
 
 interface Role {
@@ -15,21 +30,31 @@ interface Role {
   isRestricted?: boolean;
 }
 
-const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, onSave }) => {
+const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, onSave, editApp }) => {
+  const isEditMode = !!editApp;
+
   const [formData, setFormData] = useState({
-    id: '',
-    name: '',
-    icon: '',
-    category: 'game',
-    description: '',
-    realtime: 'none',
-    minPlayers: 1,
-    maxPlayers: undefined as number | undefined,
+    id: editApp?.id || '',
+    name: editApp?.name || '',
+    icon: editApp?.icon || '',
+    category: editApp?.category || 'game',
+    description: editApp?.description || '',
+    realtime: editApp?.realtime || 'none',
+    minPlayers: editApp?.minPlayers || 1,
+    maxPlayers: editApp?.maxPlayers,
+    binaryPath: editApp?.binaryPath || '',
+    staticPath: editApp?.staticPath || '',
+    guestAccessible: editApp?.guestAccessible ?? true,
+    displayOrder: editApp?.displayOrder || 999,
   });
 
   const [roles, setRoles] = useState<Role[]>([
     { id: 'player', label: 'Player', description: 'Can play the game', isDefault: true },
   ]);
+
+  const [requiredRolesInput, setRequiredRolesInput] = useState(
+    editApp?.requiredRoles?.join(', ') || ''
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,8 +101,15 @@ const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, on
         throw new Error('No authentication token');
       }
 
+      // Parse required roles from comma-separated string
+      const requiredRoles = requiredRolesInput
+        .split(',')
+        .map(r => r.trim())
+        .filter(r => r.length > 0);
+
       const payload = {
         ...formData,
+        requiredRoles,
         roles: roles.map(r => ({
           id: r.id,
           label: r.label,
@@ -87,8 +119,14 @@ const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, on
         })),
       };
 
-      const response = await fetch(`${API_BASE}/admin/apps/register`, {
-        method: 'POST',
+      const url = isEditMode
+        ? `${API_BASE}/admin/apps/${formData.id}`
+        : `${API_BASE}/admin/apps/register`;
+
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -97,21 +135,31 @@ const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, on
       });
 
       if (!response.ok) {
-        throw new Error('Failed to register app');
+        throw new Error(`Failed to ${isEditMode ? 'update' : 'register'} app`);
       }
 
-      alert('App registered successfully!');
-      setFormData({
-        id: '',
-        name: '',
-        icon: '',
-        category: 'game',
-        description: '',
-        realtime: 'none',
-        minPlayers: 1,
-        maxPlayers: undefined,
-      });
-      setRoles([{ id: 'player', label: 'Player', description: 'Can play the game', isDefault: true }]);
+      alert(`App ${isEditMode ? 'updated' : 'registered'} successfully!`);
+
+      if (!isEditMode) {
+        // Reset form only for new registrations
+        setFormData({
+          id: '',
+          name: '',
+          icon: '',
+          category: 'game',
+          description: '',
+          realtime: 'none',
+          minPlayers: 1,
+          maxPlayers: undefined,
+          binaryPath: '',
+          staticPath: '',
+          guestAccessible: true,
+          displayOrder: 999,
+        });
+        setRoles([{ id: 'player', label: 'Player', description: 'Can play the game', isDefault: true }]);
+        setRequiredRolesInput('');
+      }
+
       onSave();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -124,7 +172,9 @@ const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, on
     <>
       <div className="ah-modal-body">
         <p className="text-gray-600 mb-6">
-          Register a new mini-app by filling in the app details and defining its roles.
+          {isEditMode
+            ? 'Edit the app details and roles. App ID cannot be changed.'
+            : 'Register a new mini-app by filling in the app details and defining its roles.'}
         </p>
 
         {error && (
@@ -148,6 +198,7 @@ const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, on
                   placeholder="chess, racing, leaderboard"
                   value={formData.id}
                   onChange={handleInputChange}
+                  disabled={isEditMode}
                   required
                 />
               </div>
@@ -247,6 +298,76 @@ const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, on
                 </div>
               </div>
             )}
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-2">Binary Path *</label>
+              <input
+                type="text"
+                name="binaryPath"
+                className="ah-input w-full"
+                placeholder="/home/andrew/activity-hub-chess/backend/chess-app"
+                value={formData.binaryPath}
+                onChange={handleInputChange}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Full path to the app's executable binary</p>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-2">Static Path *</label>
+              <input
+                type="text"
+                name="staticPath"
+                className="ah-input w-full"
+                placeholder="/home/andrew/activity-hub-chess/frontend/build"
+                value={formData.staticPath}
+                onChange={handleInputChange}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Full path to the app's static files (HTML/JS/CSS)</p>
+            </div>
+
+            <div className="ah-flex gap-4 mt-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-2">Display Order</label>
+                <input
+                  type="number"
+                  name="displayOrder"
+                  className="ah-input w-full"
+                  value={formData.displayOrder}
+                  onChange={handleInputChange}
+                  min="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">Lower numbers appear first (default: 999)</p>
+              </div>
+              <div className="flex-1 flex items-center">
+                <label className="ah-flex ah-flex-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="guestAccessible"
+                    checked={formData.guestAccessible}
+                    onChange={(e) =>
+                      setFormData(prev => ({ ...prev, guestAccessible: e.target.checked }))
+                    }
+                  />
+                  <span className="text-sm font-medium">Guest Accessible</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium mb-2">Required Roles (Optional)</label>
+              <input
+                type="text"
+                className="ah-input w-full"
+                placeholder="ah_g_admin, chess:premium (comma-separated)"
+                value={requiredRolesInput}
+                onChange={(e) => setRequiredRolesInput(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Users must have ONE of these roles to access the app. Leave blank for no restrictions.
+              </p>
+            </div>
           </div>
 
           {/* Roles */}
@@ -348,7 +469,9 @@ const AdminAppRegistration: React.FC<AdminAppRegistrationProps> = ({ onClose, on
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? 'Registering...' : 'Register App'}
+            {loading
+              ? (isEditMode ? 'Updating...' : 'Registering...')
+              : (isEditMode ? 'Update App' : 'Register App')}
           </button>
         </div>
       </div>

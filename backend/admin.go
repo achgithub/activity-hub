@@ -203,18 +203,21 @@ func handleAdminUpdateApp(w http.ResponseWriter, r *http.Request) {
 	appID := vars["id"]
 
 	var req struct {
-		Name          string   `json:"name"`
-		Icon          string   `json:"icon"`
-		Description   string   `json:"description"`
-		Category      string   `json:"category"`
-		URL           string   `json:"url"`
-		BackendPort   int      `json:"backendPort"`
-		Realtime      string   `json:"realtime"`
-		MinPlayers    int      `json:"minPlayers"`
-		MaxPlayers    int      `json:"maxPlayers"`
-		RequiredRoles []string `json:"requiredRoles"`
-		Enabled       bool     `json:"enabled"`
-		DisplayOrder  int      `json:"displayOrder"`
+		Name            string   `json:"name"`
+		Icon            string   `json:"icon"`
+		Description     string   `json:"description"`
+		Category        string   `json:"category"`
+		URL             string   `json:"url"`
+		BackendPort     int      `json:"backendPort"`
+		Realtime        string   `json:"realtime"`
+		MinPlayers      int      `json:"minPlayers"`
+		MaxPlayers      int      `json:"maxPlayers"`
+		RequiredRoles   []string `json:"requiredRoles"`
+		Enabled         bool     `json:"enabled"`
+		DisplayOrder    int      `json:"displayOrder"`
+		BinaryPath      string   `json:"binaryPath"`
+		StaticPath      string   `json:"staticPath"`
+		GuestAccessible bool     `json:"guestAccessible"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -228,13 +231,16 @@ func handleAdminUpdateApp(w http.ResponseWriter, r *http.Request) {
 		SET name = $1, icon = $2, description = $3, category = $4,
 		    url = $5, backend_port = $6, realtime = $7,
 		    min_players = $8, max_players = $9,
-		    required_roles = $10, enabled = $11, display_order = $12
-		WHERE id = $13
+		    required_roles = $10, enabled = $11, display_order = $12,
+		    binary_path = $13, static_path = $14, guest_accessible = $15,
+		    updated_at = NOW()
+		WHERE id = $16
 	`,
 		req.Name, req.Icon, req.Description, req.Category,
 		req.URL, req.BackendPort, req.Realtime,
 		req.MinPlayers, req.MaxPlayers,
 		pq.Array(req.RequiredRoles), req.Enabled, req.DisplayOrder,
+		req.BinaryPath, req.StaticPath, req.GuestAccessible,
 		appID,
 	)
 
