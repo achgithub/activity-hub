@@ -213,12 +213,10 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		Email    string
 		Name     string
 		CodeHash string
-		IsAdmin  bool
-		Roles    []string
 	}
 
-	err := db.QueryRow("SELECT email, name, code_hash, is_admin, COALESCE(roles, '{}') FROM users WHERE email = $1", req.Email).
-		Scan(&user.Email, &user.Name, &user.CodeHash, &user.IsAdmin, (*pq.StringArray)(&user.Roles))
+	err := db.QueryRow("SELECT email, name, code_hash FROM users WHERE email = $1", req.Email).
+		Scan(&user.Email, &user.Name, &user.CodeHash)
 
 	if err == sql.ErrNoRows {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -235,8 +233,45 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch user's roles with group expansion
+	var roles pq.StringArray
+	err = db.QueryRow(`
+		SELECT COALESCE(array_agg(DISTINCT role_or_expanded), ARRAY[]::text[])
+		FROM (
+			-- Get direct role assignments (includes groups themselves)
+			SELECT role_id as role_or_expanded
+			FROM user_roles
+			WHERE user_email = $1
+
+			UNION
+
+			-- Get roles granted by groups (expand ah_g_* to ah_r_*)
+			SELECT gr.role_id as role_or_expanded
+			FROM user_roles ur
+			JOIN ah_group_roles gr ON ur.role_id = gr.group_id
+			WHERE ur.user_email = $1
+		) AS all_roles
+	`, user.Email).Scan(&roles)
+	if err != nil {
+		log.Printf("Failed to fetch user roles: %v", err)
+		roles = pq.StringArray{}
+	}
+
+	// Check if user is admin (standardized definition)
+	isAdmin := false
+	for _, role := range roles {
+		if len(role) >= 5 && role[:5] == "ah_g_" {
+			isAdmin = true
+			break
+		}
+		if role == "ah_r_user_manage" || role == "ah_r_app_control" {
+			isAdmin = true
+			break
+		}
+	}
+
 	// Generate JWT token
-	token, err := auth.GenerateJWT(user.Email, user.Name, user.IsAdmin, user.Roles)
+	token, err := auth.GenerateJWT(user.Email, user.Name, isAdmin, roles)
 	if err != nil {
 		log.Printf("Failed to generate JWT: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -249,8 +284,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		"user": map[string]interface{}{
 			"email":    user.Email,
 			"name":     user.Name,
-			"is_admin": user.IsAdmin,
-			"roles":    user.Roles,
+			"is_admin": isAdmin,
+			"roles":    roles,
 		},
 	})
 }
@@ -296,6 +331,43 @@ func handleValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch user's roles with group expansion (same query as /api/user/context)
+	var roles pq.StringArray
+	err = db.QueryRow(`
+		SELECT COALESCE(array_agg(DISTINCT role_or_expanded), ARRAY[]::text[])
+		FROM (
+			-- Get direct role assignments (includes groups themselves)
+			SELECT role_id as role_or_expanded
+			FROM user_roles
+			WHERE user_email = $1
+
+			UNION
+
+			-- Get roles granted by groups (expand ah_g_* to ah_r_*)
+			SELECT gr.role_id as role_or_expanded
+			FROM user_roles ur
+			JOIN ah_group_roles gr ON ur.role_id = gr.group_id
+			WHERE ur.user_email = $1
+		) AS all_roles
+	`, user.Email).Scan(&roles)
+	if err != nil {
+		log.Printf("Failed to fetch user roles: %v", err)
+		roles = pq.StringArray{}
+	}
+
+	// Check if user is admin (standardized definition)
+	isAdmin := false
+	for _, role := range roles {
+		if len(role) >= 5 && role[:5] == "ah_g_" {
+			isAdmin = true
+			break
+		}
+		if role == "ah_r_user_manage" || role == "ah_r_app_control" {
+			isAdmin = true
+			break
+		}
+	}
+
 	// Check if this is a guest user (email starts with "guest-")
 	isGuest := len(user.Email) > 6 && user.Email[:6] == "guest-"
 
@@ -304,8 +376,8 @@ func handleValidate(w http.ResponseWriter, r *http.Request) {
 		"user": map[string]interface{}{
 			"email":    user.Email,
 			"name":     user.Name,
-			"is_admin": user.IsAdmin,
-			"roles":    user.Roles,
+			"is_admin": isAdmin,
+			"roles":    roles,
 		},
 	}
 
