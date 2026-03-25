@@ -1,6 +1,6 @@
 {
   "name": "activity-hub-sdk",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "SDK for Activity Hub mini-apps with hooks, utilities, and UI components. Provides enforced design consistency.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
