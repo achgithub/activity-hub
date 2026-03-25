@@ -13,6 +13,7 @@ export interface ActivityHubContext {
   user: {
     email: string;
     name: string;
+    isGuest?: boolean; // True if user is not authenticated
   };
   roles: {
     // All roles assigned to user (ah_r_*, ah_g_*, app:role)
@@ -29,6 +30,10 @@ export interface ActivityHubContext {
     hasApp: (role: string) => boolean; // Check if user has app-specific role (e.g., 'admin' checks for 'chess:admin')
     hasAny: (roles: string[]) => boolean; // Check if user has any of the listed roles
     hasAll: (roles: string[]) => boolean; // Check if user has all listed roles
+
+    // Tab-based access control (for multi-tab apps)
+    hasTabAccess: (tabName: string, tabOrder: string[]) => boolean; // Check access to specific tab
+    getAccessibleTabs: (tabOrder: string[]) => string[]; // Get list of accessible tabs
 
     // Admin check
     isAdmin: boolean; // Has any ah_g_* group or ah_r_app_control

@@ -22,7 +22,7 @@ const API_BASE = `http://${typeof window !== 'undefined' ? window.location.hostn
  */
 export function useActivityHubContext(): ActivityHubContext {
   const [context, setContext] = useState<ActivityHubContext>({
-    user: { email: '', name: '' },
+    user: { email: '', name: '', isGuest: false },
     roles: {
       all: [],
       ah_roles: [],
@@ -31,6 +31,8 @@ export function useActivityHubContext(): ActivityHubContext {
       hasApp: () => false,
       hasAny: () => false,
       hasAll: () => false,
+      hasTabAccess: () => false,
+      getAccessibleTabs: () => [],
       isAdmin: false,
     },
     isTestMode: false,
@@ -53,8 +55,24 @@ export function useActivityHubContext(): ActivityHubContext {
           token = params.get('token');
         }
 
+        // Guest mode: no token, return guest context
         if (!token) {
-          setError('No authentication token found');
+          setContext({
+            user: { email: '', name: 'Guest', isGuest: true },
+            roles: {
+              all: [],
+              ah_roles: [],
+              app_roles: [],
+              has: () => false,
+              hasApp: () => false,
+              hasAny: () => false,
+              hasAll: () => false,
+              hasTabAccess: () => false,
+              getAccessibleTabs: () => [],
+              isAdmin: false,
+            },
+            isTestMode: false,
+          });
           setLoading(false);
           return;
         }
@@ -105,10 +123,46 @@ export function useActivityHubContext(): ActivityHubContext {
           r === 'ah_r_app_control'
         );
 
+        // Extract appId from URL if available
+        const params = new URLSearchParams(window.location.search);
+        const appId = params.get('appId') || data.appId || '';
+
+        // Tab-based access control
+        // Convention: Left tabs = more privileges, right tabs = less privileges
+        // Having a role grants access to that tab + all tabs to its right
+        const hasTabAccess = (tabName: string, tabOrder: string[]): boolean => {
+          // Check for wildcard role (appId:all)
+          if (appId && has(`${appId}:all`)) {
+            return true;
+          }
+
+          // Find position of requested tab
+          const requestedTabPos = tabOrder.indexOf(tabName);
+          if (requestedTabPos === -1) {
+            return false; // Tab not found
+          }
+
+          // Check if user has role for this tab or any tab to its left
+          // Left tabs grant access to right tabs
+          for (let i = 0; i <= requestedTabPos; i++) {
+            const role = appId ? `${appId}:${tabOrder[i]}` : tabOrder[i];
+            if (has(role)) {
+              return true;
+            }
+          }
+
+          return false;
+        };
+
+        const getAccessibleTabs = (tabOrder: string[]): string[] => {
+          return tabOrder.filter(tab => hasTabAccess(tab, tabOrder));
+        };
+
         setContext({
           user: {
             email: data.user?.email || '',
             name: data.user?.name || '',
+            isGuest: false,
           },
           roles: {
             all: roles,
@@ -118,6 +172,8 @@ export function useActivityHubContext(): ActivityHubContext {
             hasApp,
             hasAny,
             hasAll,
+            hasTabAccess,
+            getAccessibleTabs,
             isAdmin,
           },
           isTestMode: data.isTestMode || false,
