@@ -1,6 +1,7 @@
 # Activity Hub Role Setup Guide
 
 **Date:** 2026-03-25
+**SDK Version:** 1.2.0 (bumped from 1.1.1)
 **Status:** Ready for Pi deployment and testing
 
 ---
