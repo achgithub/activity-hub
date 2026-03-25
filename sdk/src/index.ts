@@ -17,3 +17,6 @@ export { AppHeader } from './components/AppHeader';
 export type { AppHeaderProps } from './components/AppHeader';
 export { GameCard } from './components/GameCard';
 export type { GameCardProps } from './components/GameCard';
+
+// Type exports
+export type { ActivityHubContext } from './types/roles';
