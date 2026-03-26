@@ -361,7 +361,6 @@ All mini-apps use Activity Hub SDK for authentication and role-based access.
 
 ### Reference
 - **DATABASE_SUMMARY.md** - Role definitions and database schema for all mini-apps
-- **sdk/README.md** - `useActivityHubContext()` hook documentation
 
 ---
 
