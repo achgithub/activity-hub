@@ -576,4 +576,4 @@ curl http://localhost:3001/api/health
 
 **Status:** Ready for Pi deployment
 **Last Updated:** 2026-03-16
-**See Also:** [APP_LAUNCHER.md](./APP_LAUNCHER.md), [AWARENESS_SERVICE.md](./AWARENESS_SERVICE.md), [MINI_APP_INTEGRATION.md](./MINI_APP_INTEGRATION.md)
+**See Also:** [AWARENESS_SERVICE.md](./AWARENESS_SERVICE.md), [MINI_APP_INTEGRATION.md](./MINI_APP_INTEGRATION.md)

@@ -401,7 +401,6 @@ All databases owned by `activityhub` user (PostgreSQL 17.9).
 |------|---------|
 | database/init.sql | PostgreSQL schema (9 tables, 20+ indexes) |
 | database/REDIS_SETUP.md | Redis configuration and key patterns |
-| docs/APP_LAUNCHER.md | App lifecycle management |
 | docs/AWARENESS_SERVICE.md | Presence and session tracking |
 | docs/MINI_APP_INTEGRATION.md | How to add mini-apps |
 | docs/AUTHENTICATION.md | Auth patterns and SDK usage |

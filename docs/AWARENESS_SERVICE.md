@@ -517,5 +517,4 @@ Check:
 
 ## See Also
 
-- [App Launcher Guide](./APP_LAUNCHER.md)
 - [Mini-App Integration Guide](./MINI_APP_INTEGRATION.md)

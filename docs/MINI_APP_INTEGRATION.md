@@ -416,7 +416,6 @@ const { participants, isInSession } = useSessionAwareness(
 
 ### Documentation
 
-- [App Launcher Guide](./APP_LAUNCHER.md) - How apps are launched
 - [Awareness Service Guide](./AWARENESS_SERVICE.md) - Presence & sessions
 - [React Hooks Reference](#) - useAwareness, useSessionAwareness
 
@@ -446,5 +445,4 @@ Ask in the activity-hub channel or open an issue on GitHub.
 
 ## See Also
 
-- [App Launcher Guide](./APP_LAUNCHER.md)
 - [Awareness Service Guide](./AWARENESS_SERVICE.md)

@@ -406,14 +406,12 @@ activity-hub/
 │   ├── MINI_APP_INTEGRATION.md     ← How to build apps
 │   ├── MINIAPP_GUIDE.md            ← Standards & tech stack
 │   ├── AUTHENTICATION.md            ← Auth patterns
-│   ├── TESTING_AND_DEPLOYMENT.md   ← Deployment procedures
-│   └── APP_LAUNCHER.md             ← Unix socket launching
+│   └── TESTING_AND_DEPLOYMENT.md   ← Deployment procedures
 ├── .githooks/
 │   └── pre-commit                  ← CSS enforcement
 ├── scripts/
 │   └── setup-git-hooks.sh
-├── ROLE_SETUP_GUIDE.md             ← Role definitions
-├── DATABASE_SUMMARY.md             ← Schema documentation
+├── DATABASE_SUMMARY.md             ← Schema & roles documentation
 ├── ARCHITECTURE.md                 ← Design reference
 └── CLAUDE.md                        ← This file
 ```
