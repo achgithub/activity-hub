@@ -581,6 +581,75 @@ func HandleCreateRole(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// HandleDeleteRole - DELETE /api/admin/roles/{roleId}
+// Delete a role or group and remove all user assignments
+func HandleDeleteRole(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	roleId := vars["roleId"]
+
+	// Check admin permission
+	token := r.Header.Get("Authorization")
+	if token == "" || len(token) <= 7 {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	admin, err := auth.ResolveToken(db, token[7:])
+	if err != nil || !isUserAdmin(admin.Email) {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Determine if it's a role or group by checking which table contains it
+	var existsInRoles bool
+	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM ah_roles WHERE id = $1)", roleId).Scan(&existsInRoles)
+	if err != nil {
+		log.Printf("Failed to check role existence: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	var existsInGroups bool
+	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM ah_groups WHERE id = $1)", roleId).Scan(&existsInGroups)
+	if err != nil {
+		log.Printf("Failed to check group existence: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !existsInRoles && !existsInGroups {
+		http.Error(w, "Role or group not found", http.StatusNotFound)
+		return
+	}
+
+	// Delete from user_roles first (foreign key constraint)
+	_, err = db.Exec("DELETE FROM user_roles WHERE role_id = $1", roleId)
+	if err != nil {
+		log.Printf("Failed to remove user role assignments: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the role or group
+	table := "ah_roles"
+	if existsInGroups {
+		table = "ah_groups"
+	}
+
+	_, err = db.Exec(fmt.Sprintf("DELETE FROM %s WHERE id = $1", table), roleId)
+	if err != nil {
+		log.Printf("Failed to delete role: %v", err)
+		http.Error(w, "Internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Role deleted successfully",
+	})
+}
+
 // HandleGetUsers - GET /api/admin/users
 // List all users with their assigned roles
 func HandleGetUsers(w http.ResponseWriter, r *http.Request) {

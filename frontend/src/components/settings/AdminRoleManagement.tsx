@@ -86,6 +86,30 @@ const AdminRoleManagement: React.FC<AdminRoleManagementProps> = ({ onClose }) =>
     }
   };
 
+  const handleDeleteRole = async (roleId: string) => {
+    if (!confirm(`Are you sure you want to delete role "${roleId}"? This will remove it from all users.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/admin/roles/${encodeURIComponent(roleId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to delete role');
+
+      await fetchRoles();
+      alert('Role deleted successfully');
+    } catch (err) {
+      console.error('Failed to delete role:', err);
+      alert('Failed to delete role');
+    }
+  };
+
   if (loading) {
     return (
       <div className="ah-modal-body ah-flex ah-flex-center">
@@ -227,6 +251,7 @@ const AdminRoleManagement: React.FC<AdminRoleManagementProps> = ({ onClose }) =>
                   <th>ID</th>
                   <th>Name</th>
                   <th>Description</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,6 +263,14 @@ const AdminRoleManagement: React.FC<AdminRoleManagementProps> = ({ onClose }) =>
                     <td className="font-medium">{role.name}</td>
                     <td className="text-sm text-gray-600">
                       {role.description || '-'}
+                    </td>
+                    <td>
+                      <button
+                        className="ah-btn-danger ah-btn-sm"
+                        onClick={() => handleDeleteRole(role.id)}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -156,6 +156,7 @@ func main() {
 	// Admin endpoints for roles
 	admin.HandleFunc("/roles", HandleGetAHRoles).Methods("GET")
 	admin.HandleFunc("/roles", HandleCreateRole).Methods("POST")
+	admin.HandleFunc("/roles/{roleId}", HandleDeleteRole).Methods("DELETE")
 	admin.HandleFunc("/users", HandleGetUsers).Methods("GET")
 	admin.HandleFunc("/users", HandleCreateUser).Methods("POST")
 	admin.HandleFunc("/users/{email}/roles", HandleGetUserRoles).Methods("GET")
