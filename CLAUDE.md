@@ -2,7 +2,7 @@
 
 **Project:** Activity Hub Platform
 **Status:** Phase 2 (Flattened + SDK Extraction)
-**Last Updated:** 2026-03-19
+**Last Updated:** 2026-03-26
 
 ---
 
@@ -106,9 +106,9 @@ export function GameBoard() {
 ```
 
 ### Step 3: Reference Documentation
-- **packages/ui/CSS_GUIDE.md** - Complete class reference with examples
-- **packages/ui/CSS_AUDIT.md** - Design decisions and patterns
-- **packages/ui/src/styles/activity-hub.css** - Source code with comments
+- **frontend/docs/CSS_GUIDE.md** - Complete class reference with examples
+- **frontend/docs/CSS_AUDIT.md** - Design decisions and patterns
+- **frontend/src/styles/activity-hub.css** - Source code with comments
 
 ---
 
@@ -171,7 +171,7 @@ export function GameBoard() {
 .ah-modal--small           Small modal (max-width: 24rem)
 ```
 
-**See packages/ui/CSS_GUIDE.md for 180+ complete class reference**
+**See frontend/docs/CSS_GUIDE.md for 180+ complete class reference**
 
 ---
 
@@ -329,14 +329,14 @@ git commit --no-verify
    - Never create component CSS files
    - Never hardcode colors
 
-2. **ALWAYS check CSS_GUIDE.md**
+2. **ALWAYS check frontend/docs/CSS_GUIDE.md**
    - Before creating UI, review available classes
    - Use semantic class names
    - Combine classes for complex layouts
 
-3. **ALWAYS import CSS in index.tsx**
-   - Verify: `import './styles/activity-hub.css'` in frontend/src/index.tsx
-   - Never import in component files
+3. **ALWAYS import CSS only in frontend/src/index.tsx**
+   - Import: `import './styles/activity-hub.css'`
+   - Never import CSS in component files
    - Never create new CSS files
 
 4. **NEVER deviate from this**
@@ -350,43 +350,71 @@ git commit --no-verify
 
 ---
 
+## Role-Based Access Control (RBAC)
+
+All mini-apps use Activity Hub SDK for authentication and role-based access.
+
+### Key Concepts
+- **Role Naming**: Format is `appid:rolename` (e.g., `lms-manager:setup`, `tictactoe:player`)
+- **SDK Integration**: Use `useActivityHubContext()` hook to access user roles
+- **Tab Hierarchy**: Left tabs = more privileges (setup > games > reports)
+- **Default Roles**: All users get a default role (e.g., `lms-manager:reports`)
+
+### Reference
+- **ROLE_SETUP_GUIDE.md** - Complete role definitions for Dice, Tic Tac Toe, Bulls & Cows, LMS
+- **docs/AUTHENTICATION.md** - Auth patterns and SDK usage
+- **sdk/README.md** - `useActivityHubContext()` hook documentation
+
+---
+
 ## Project Structure
 
 ```
 activity-hub/
-├── frontend/                        Main React app (flattened)
+├── frontend/                        Main React app
 │   ├── src/
-│   │   ├── index.tsx               ← Imports CSS here
-│   │   ├── App.tsx
+│   │   ├── index.tsx               ← Imports activity-hub.css
+│   │   ├── App.tsx                 ← Main shell
 │   │   ├── components/
-│   │   │   └── awareness/          ← Awareness components from old ui package
-│   │   ├── types/                  ← Types from old core package
+│   │   │   ├── awareness/          ← Presence/awareness UI
+│   │   │   └── settings/           ← Admin settings
+│   │   ├── hooks/
+│   │   │   ├── useApps.ts          ← App launcher logic
+│   │   │   └── useAwareness.ts     ← Presence hook
 │   │   ├── styles/
-│   │   │   ├── activity-hub.css    ← SINGLE CSS FILE
-│   │   │   └── activity-hub-src.css
-│   │   └── hooks/
+│   │   │   └── activity-hub.css    ← SINGLE shared CSS file
+│   │   └── types/
 │   ├── docs/
-│   │   ├── CSS_GUIDE.md            ← Developer reference
+│   │   ├── CSS_GUIDE.md            ← 180+ class reference
 │   │   └── CSS_AUDIT.md            ← Design decisions
-│   ├── tailwind.config.js          ← From old ui package
-│   ├── package.json                ← No workspace deps
-│   └── tsconfig.json
-├── sdk/                             Standalone publishable package
+│   └── package.json
+├── sdk/                             Publishable npm package
 │   ├── src/
-│   │   ├── awareness.ts
+│   │   ├── useActivityHubContext.ts ← Auth & roles hook
 │   │   ├── useAwareness.ts
-│   │   ├── useActivityHubContext.ts
-│   │   ├── types/                  ← Bundled types (same as frontend/src/types)
+│   │   ├── types/
 │   │   └── index.ts
-│   ├── package.json                ← Publishable to npm
-│   ├── README.md
-│   └── tsconfig.json               ← Standalone config
-├── backend/                         Unchanged (Go)
-├── database/                        Unchanged (SQL)
+│   ├── package.json                ← Published to npm
+│   └── README.md
+├── backend/                         Go API server
+│   ├── main.go
+│   └── roles_handlers.go            ← Role & group CRUD
+├── database/                        PostgreSQL schema
+│   └── init.sql
+├── docs/
+│   ├── ARCHITECTURE.md              ← System design patterns
+│   ├── MINI_APP_INTEGRATION.md     ← How to build apps
+│   ├── MINIAPP_GUIDE.md            ← Standards & tech stack
+│   ├── AUTHENTICATION.md            ← Auth patterns
+│   ├── TESTING_AND_DEPLOYMENT.md   ← Deployment procedures
+│   └── APP_LAUNCHER.md             ← Unix socket launching
 ├── .githooks/
-│   └── pre-commit                  ← CSS enforcement hook
+│   └── pre-commit                  ← CSS enforcement
 ├── scripts/
-│   └── setup-git-hooks.sh          ← Install hook
+│   └── setup-git-hooks.sh
+├── ROLE_SETUP_GUIDE.md             ← Role definitions
+├── DATABASE_SUMMARY.md             ← Schema documentation
+├── ARCHITECTURE.md                 ← Design reference
 └── CLAUDE.md                        ← This file
 ```
 
@@ -394,20 +422,21 @@ activity-hub/
 
 ## Key Files to Reference
 
-1. **frontend/docs/CSS_GUIDE.md** (11KB)
-   - Complete class reference with examples
-   - 180+ utility classes documented
-   - Best practices and patterns
+### CSS & Styling
+1. **frontend/docs/CSS_GUIDE.md** - 180+ class reference with examples
+2. **frontend/docs/CSS_AUDIT.md** - Design decisions and color palette
+3. **frontend/src/styles/activity-hub.css** - Source CSS with inline comments
 
-2. **frontend/docs/CSS_AUDIT.md** (9.5KB)
-   - Audit findings and methodology
-   - Color palette documentation
-   - File organization details
+### Architecture & Integration
+4. **ARCHITECTURE.md** - System design patterns (SSO, SDK, awareness)
+5. **ROLE_SETUP_GUIDE.md** - Role definitions for all 4 mini-apps
+6. **DATABASE_SUMMARY.md** - PostgreSQL schema and deployment
+7. **docs/MINI_APP_INTEGRATION.md** - How to build and deploy mini-apps
 
-3. **frontend/src/styles/activity-hub.css** (1,538 lines)
-   - Source CSS with inline comments
-   - 23 organized sections
-   - Ready for minification and publishing
+### Development
+8. **docs/MINIAPP_GUIDE.md** - Technology stack and standards
+9. **docs/AUTHENTICATION.md** - Auth patterns and token handling
+10. **docs/TESTING_AND_DEPLOYMENT.md** - Build and test procedures
 
 ---
 
@@ -424,19 +453,25 @@ activity-hub/
 
 ## Getting Help
 
-### CSS Classes
-- See **frontend/docs/CSS_GUIDE.md** for class reference
-- All 180+ classes are documented with examples
+### CSS & Styling
+- **frontend/docs/CSS_GUIDE.md** - 180+ class reference with examples
+- **frontend/docs/CSS_AUDIT.md** - Design decisions and patterns
+- Check existing components in `frontend/src/components/`
 
-### Implementation Questions
-- Reference existing components in `frontend/src/components/`
-- Check patterns in `frontend/docs/CSS_AUDIT.md`
-- Review inline comments in `frontend/src/styles/activity-hub.css`
+### Roles & Authentication
+- **ROLE_SETUP_GUIDE.md** - Role definitions for all apps
+- **docs/AUTHENTICATION.md** - Auth patterns and SDK usage
+- **docs/MINI_APP_INTEGRATION.md** - How to integrate SDK in new apps
 
-### Issues with Hook
+### Architecture & Deployment
+- **ARCHITECTURE.md** - System design (SSO, awareness, SDK)
+- **DATABASE_SUMMARY.md** - PostgreSQL schema
+- **docs/TESTING_AND_DEPLOYMENT.md** - Build and test procedures
+
+### Git Hook Issues
 - Run `./scripts/setup-git-hooks.sh` to reinstall
 - Check `.githooks/pre-commit` for logic
-- Temporarily bypass with `git commit --no-verify` (not recommended)
+- Bypass with `git commit --no-verify` (not recommended)
 
 ---
 
@@ -447,11 +482,11 @@ activity-hub/
 ✅ No inline styles in components
 ✅ No CSS imports except in index.tsx
 ✅ All styling via `.ah-*` classes
-✅ index.tsx imports `@activity-hub/ui/styles/activity-hub.css`
+✅ index.tsx imports `./styles/activity-hub.css`
 ✅ Git hook passes on every commit
 
 ---
 
 **Status:** Active enforcement via pre-commit hook
-**Last Verified:** 2026-03-16
+**Last Verified:** 2026-03-26
 **Maintainer:** Activity Hub Team
