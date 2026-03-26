@@ -403,8 +403,7 @@ activity-hub/
 ├── docs/
 │   ├── ARCHITECTURE.md              ← System design patterns
 │   ├── MINI_APP_INTEGRATION.md     ← How to build apps
-│   ├── MINIAPP_GUIDE.md            ← Standards & tech stack
-│   └── TESTING_AND_DEPLOYMENT.md   ← Deployment procedures
+│   └── MINIAPP_GUIDE.md            ← Standards & tech stack
 ├── .githooks/
 │   └── pre-commit                  ← CSS enforcement
 ├── scripts/
@@ -431,7 +430,6 @@ activity-hub/
 
 ### Development
 8. **docs/MINIAPP_GUIDE.md** - Technology stack and standards
-9. **docs/TESTING_AND_DEPLOYMENT.md** - Build and test procedures
 
 ---
 
@@ -460,7 +458,6 @@ activity-hub/
 ### Architecture & Deployment
 - **ARCHITECTURE.md** - System design (SSO, awareness, SDK)
 - **DATABASE_SUMMARY.md** - PostgreSQL schema
-- **docs/TESTING_AND_DEPLOYMENT.md** - Build and test procedures
 
 ### Git Hook Issues
 - Run `./scripts/setup-git-hooks.sh` to reinstall
