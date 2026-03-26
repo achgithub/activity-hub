@@ -279,8 +279,30 @@ POST /api/auth/login
 - `bulls-and-cows` - 2-player code-guessing game
 
 **Utilities (2):**
-- `dice` - Utility for rolling 1-6 dice (stateless, no database)
+- `dice` - Utility for rolling 1-6 dice (stateless, no database, guest-accessible)
 - `lms-manager` - Learning management system with game setup and reporting
+
+### Role-Based Access Control (RBAC)
+
+Roles are stored in `users.roles` as a TEXT[] array. Format: `appid:rolename`
+
+**Dice** (Guest Accessible)
+- No authentication required
+- Works for both authenticated and guest users
+
+**Tic-Tac-Toe**
+- `tictactoe:player` - Can play games (default role for all users)
+
+**Bulls & Cows**
+- `bullsandcows:player` - Can play games (default role for all users)
+
+**LMS Manager** (Tab-Based Hierarchy)
+- `lms-manager:setup` - Full access (Setup, Games, Reports tabs)
+- `lms-manager:games` - Game management (Games, Reports tabs)
+- `lms-manager:reports` - View-only (Reports tab only, default role for all users)
+
+**Tab Hierarchy:** Having a role grants access to that tab + all tabs to its right
+- `setup` (most privileges) → `games` → `reports` (least privileges)
 
 ---
 
@@ -382,7 +404,7 @@ All databases owned by `activityhub` user (PostgreSQL 17.9).
 | docs/APP_LAUNCHER.md | App lifecycle management |
 | docs/AWARENESS_SERVICE.md | Presence and session tracking |
 | docs/MINI_APP_INTEGRATION.md | How to add mini-apps |
-| ROLE_SETUP_GUIDE.md | Role definitions for each mini-app |
+| docs/AUTHENTICATION.md | Auth patterns and SDK usage |
 
 **External:**
 | File | Purpose |

@@ -361,7 +361,7 @@ All mini-apps use Activity Hub SDK for authentication and role-based access.
 - **Default Roles**: All users get a default role (e.g., `lms-manager:reports`)
 
 ### Reference
-- **ROLE_SETUP_GUIDE.md** - Complete role definitions for Dice, Tic Tac Toe, Bulls & Cows, LMS
+- **DATABASE_SUMMARY.md** - Role definitions and database schema for all mini-apps
 - **docs/AUTHENTICATION.md** - Auth patterns and SDK usage
 - **sdk/README.md** - `useActivityHubContext()` hook documentation
 
