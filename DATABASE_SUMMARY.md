@@ -7,16 +7,14 @@ Complete database initialization and deployment infrastructure for Activity Hub 
 ### Files Created
 
 **Database:**
-- `database/init.sql` - Complete PostgreSQL schema (7 tables, 20+ indexes, bootstrap data)
+- `database/init.sql` - Complete PostgreSQL schema (9 tables, 20+ indexes, bootstrap data)
 - `database/REDIS_SETUP.md` - Redis configuration guide (key patterns, TTLs, monitoring)
-- `database/DEPLOYMENT_GUIDE.md` - Complete deployment guide (manual and automated steps)
-
-**Deployment Script:**
-- `scripts/deploy-pi.sh` - Automated deployment script (installs dependencies, creates DB, builds services)
 
 ---
 
 ## Database Schema (9 Tables)
+
+**Note:** Some tables below (email_verifications, password_resets) are defined in schema but their authentication flows were never fully implemented.
 
 ### Table 1: `users`
 **Purpose:** Authentication, user profiles, role-based access control
@@ -253,7 +251,7 @@ See [rpibuildscripts README](https://github.com/achgithub/rpibuildscripts#readme
 
 ---
 
-## Authentication & Self-Registration
+## Authentication
 
 ### Bootstrap Admin User
 
@@ -272,82 +270,17 @@ POST /api/auth/login
 }
 ```
 
-### Self-Registration Flow
+**Note:** Self-registration (email verification) and password reset flows were never fully implemented. Only the bootstrap admin user can currently log in.
 
-**Step 1: User registers**
-```bash
-POST /api/auth/register
-{
-  "email": "alice@example.com"
-}
-```
-→ Backend creates unverified user, sends verification email
+### Registered Mini-Apps (4)
 
-**Step 2: User clicks email link**
-- Email contains: `http://localhost:3001/verify-email?token={token}`
-- Frontend opens verification page
+**Games (2):**
+- `tic-tac-toe` - 2-player real-time game with awareness
+- `bulls-and-cows` - 2-player code-guessing game
 
-**Step 3: User sets password**
-```bash
-POST /api/auth/verify-email
-{
-  "token": "{token_from_email}",
-  "password": "user_chosen_password"
-}
-```
-→ Backend validates token, sets bcrypt password hash, marks email verified
-→ Returns auth token for immediate login
-
-### Password Reset Flow
-
-**Step 1: User requests reset**
-```bash
-POST /api/auth/request-password-reset
-{
-  "email": "alice@example.com"
-}
-```
-→ Backend sends reset email with 1-hour token
-
-**Step 2: User clicks reset link**
-- Email contains: `http://localhost:3001/reset-password?token={token}`
-
-**Step 3: User sets new password**
-```bash
-POST /api/auth/reset-password
-{
-  "token": "{token_from_email}",
-  "password": "new_password"
-}
-```
-→ Backend updates password hash, token marked used
-
-### Token Storage
-
-All tokens are single-use and expire:
-- Email verification: 24 hours
-- Password reset: 1 hour
-- Used tokens: Can't be reused (marked in `used_at`)
-
-### Apps (14 Pre-Registered)
-
-**Games (9):**
-- tic-tac-toe (2-player, SSE)
-- dots (2-4 players, SSE)
-- last-man-standing (3-6 players, SSE)
-- sweepstakes (2-8 players, SSE)
-- quiz-player (1-100 players, SSE)
-- spoof (3-6 players, SSE)
-- rrroll-the-dice (2-6 players)
-- sudoku (1 player)
-- bulls-and-cows (2 players, SSE)
-
-**Utilities (5):**
-- leaderboard (enabled)
-- game-admin (disabled)
-- season-scheduler (disabled)
-- quiz-master (enabled, SSE)
-- quiz-display (enabled, SSE)
+**Utilities (2):**
+- `dice` - Utility for rolling 1-6 dice (stateless, no database)
+- `lms-manager` - Learning management system with game setup and reporting
 
 ---
 
@@ -384,7 +317,7 @@ cd rpibuildscripts
 
 # 3. Initialize activity-hub database
 cd ~/activity-hub
-psql -c "CREATE DATABASE activity_hub;"
+psql -c "CREATE DATABASE activity_hub OWNER activityhub;"
 psql -d activity_hub < database/init.sql
 
 # 4. Build and start backend
@@ -396,11 +329,6 @@ cd backend && go build -o activity-hub-backend .
 # Login with bootstrap admin:
 #   Email: admin@activity-hub.com
 #   Password: 123456
-#
-# Or register new user:
-#   POST /api/auth/register with email
-#   Verify email link sent
-#   Set password via verification link
 ```
 
 ---
@@ -412,22 +340,49 @@ cd backend && go build -o activity-hub-backend .
 | PostgreSQL won't connect | `psql -c "SELECT 1;"` | Verify service running, check env vars |
 | Redis won't connect | `redis-cli ping` | Should return PONG, check service status |
 | Backend won't start | Check `PGHOST`, `PGPORT`, `REDIS_HOST` | Load env: `source ~/.postgresql_env.sh ~/.redis_env.sh` |
-| Database schema missing | `psql -d activity_hub -c "\dt"` | Should show 7 tables, run: `psql -d activity_hub < database/init.sql` |
+| Database schema missing | `psql -d activity_hub -c "\dt"` | Should show 9 tables, run: `psql -d activity_hub < database/init.sql` |
 
 See `database/REDIS_SETUP.md` for Redis configuration details.
 
 ---
 
+## Database Audit Reference
+
+To verify database state on Pi:
+
+```sql
+-- Check all databases and ownership
+SELECT datname, pg_catalog.pg_get_userbyid(datdba) as owner,
+       pg_size_pretty(pg_database_size(datname)) as size
+FROM pg_database
+WHERE datname NOT IN ('postgres', 'template0', 'template1')
+ORDER BY datname;
+
+-- Verify applications registered
+SELECT id, name, type FROM applications ORDER BY id;
+
+-- Verify roles defined
+SELECT email, roles FROM users;
+```
+
+**Current State (Pi after cleanup):**
+- activity_hub (11 MB) - Main database, owner: activityhub
+- bullsandcows (7902 kB) - Tic Tac Toe and Bulls & Cows game data, owner: activityhub
+- lms_manager (8182 kB) - LMS game setup and reporting, owner: activityhub
+- tictactoe (7862 kB) - Tic Tac Toe games, owner: activityhub
+
+All databases owned by `activityhub` user (PostgreSQL 17.9).
+
 ## Documentation Files
 
 | File | Purpose |
 |------|---------|
-| database/init.sql | PostgreSQL schema (7 tables, 20+ indexes) |
+| database/init.sql | PostgreSQL schema (9 tables, 20+ indexes) |
 | database/REDIS_SETUP.md | Redis configuration and key patterns |
 | docs/APP_LAUNCHER.md | App lifecycle management |
 | docs/AWARENESS_SERVICE.md | Presence and session tracking |
 | docs/MINI_APP_INTEGRATION.md | How to add mini-apps |
-| IMPLEMENTATION_SUMMARY.md | Project overview |
+| ROLE_SETUP_GUIDE.md | Role definitions for each mini-app |
 
 **External:**
 | File | Purpose |
@@ -448,13 +403,18 @@ See `database/REDIS_SETUP.md` for Redis configuration details.
 
 **What's Included:**
 - ✅ Complete PostgreSQL schema (init.sql) - 9 tables with indexes and constraints
-- ✅ Self-registration with email verification
-- ✅ Password reset via email
 - ✅ Bootstrap admin user (admin@activity-hub.com / 123456)
-- ✅ 14 pre-registered apps
+- ✅ 4 registered mini-apps (Dice, Tic Tac Toe, Bulls & Cows, LMS Manager)
+- ✅ Role-based access control via RBAC system
 - ✅ Redis key patterns reference (REDIS_SETUP.md)
+- ✅ Clean database ownership (all databases owned by `activityhub` user)
+
+**Not Implemented:**
+- ❌ Self-registration with email verification
+- ❌ Password reset via email
+- (email_verifications and password_resets tables defined but flows never completed)
 
 **Deployment Uses:**
 - 🔗 [rpibuildscripts](https://github.com/achgithub/rpibuildscripts) for dependencies
 
-**Last Updated:** 2026-03-16
+**Last Updated:** 2026-03-26
