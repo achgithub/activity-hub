@@ -2,7 +2,7 @@
 
 **Purpose**: Quick reference for recurring patterns when building/migrating mini-apps
 
-**Last Updated**: 2026-03-24
+**Last Updated**: 2026-03-26
 
 ---
 
@@ -11,22 +11,19 @@
 ### How Authentication Works
 
 - **Main Platform**: Stores JWT in `localStorage.getItem('token')` after login
-  - Login endpoint: `POST /api/login` returns JWT (App.tsx:59-82)
-  - Token validated on startup: `POST /api/validate` (App.tsx:37-57)
+  - Login endpoint: `POST /api/login` returns JWT
+  - Token validated on startup: `POST /api/validate`
 
 - **Token Passed to Mini-Apps**: Via URL query parameter when iframe loads
-  - Built in: `useApps.ts:94` - `searchParams.set('token', token)`
   - Pattern: `/api/apps/{appId}/proxy/?token=xxx&userId=xxx&gameId=xxx`
 
 - **Mini-Apps Extract Token**: SDK's `useActivityHubContext` hook
   - Checks localStorage FIRST (standalone mode)
   - Falls back to URL params (iframe mode)
-  - Code: `useActivityHubContext.ts:48-54`
 
 - **Token Validation**: Backend `/api/validate` endpoint
   - Input: `{ token: string }`
   - Output: `{ valid: bool, user: {...}, roles: [...] }`
-  - Code: `main.go:278-323`
 
 - **Centralized Auth**: `github.com/achgithub/activity-hub-auth` package
   - JWT generation
@@ -40,10 +37,10 @@ User Login → JWT in localStorage → URL param to iframe → Mini-app localSto
 ```
 
 **Files**:
-- `frontend/src/App.tsx:15-36` - Token validation on startup
-- `frontend/src/hooks/useApps.ts:83-94` - Token added to proxy URL
-- `sdk/src/useActivityHubContext.ts:42-60` - Token extraction in mini-apps
-- `backend/main.go:278-323` - Validation endpoint
+- `frontend/src/App.tsx` - Token validation on startup
+- `frontend/src/hooks/useApps.ts` - Token added to proxy URL
+- `sdk/src/useActivityHubContext.ts` - Token extraction in mini-apps
+- `backend/main.go` - Validation endpoint
 
 ---
 
@@ -54,19 +51,15 @@ User Login → JWT in localStorage → URL param to iframe → Mini-app localSto
 **Core Exports** (`sdk/src/index.ts`):
 ```tsx
 import {
-  useActivityHubContext,    // User + roles
+  useActivityHubContext,    // User + roles + email
   useAwareness,              // Real-time presence
   useSessionAwareness,       // Session-specific presence
   requestSSEToken,           // Secure SSE tokens
   createSecureEventSource,   // EventSource helper
-  AppHeader,                 // UI component
-  GameCard,                  // UI component
 } from '@activity-hub/sdk';
 ```
 
-**Auto-loaded on Import**:
-- Shared CSS injected automatically (`sdk/src/styles/loadSharedCSS.ts`)
-- Creates `<link>` tag pointing to `http://hostname:3001/shared/activity-hub.css`
+**Note**: Mini-apps use the SDK for authentication and awareness. UI components (buttons, cards) come from the shared CSS classes in `activity-hub.css`.
 
 ### Role Checking Patterns
 
@@ -107,16 +100,19 @@ if (roles.isAdmin) {
   ```json
   {
     "user": { "email": "...", "name": "..." },
-    "roles": ["ah_g_admin", "chess:player", "tic-tac-toe:admin"],
+    "roles": ["ah_g_admin", "chess:player", "tic-tac-toe:player"],
     "isTestMode": false
   }
   ```
-- **Code**: `backend/roles_handlers.go`
+
+**Role Naming Convention**: `appid:rolename` (e.g., `lms-manager:setup`, `tictactoe:player`)
+- See **ROLE_SETUP_GUIDE.md** for all role definitions
+- See **docs/AUTHENTICATION.md** for auth patterns
 
 **Files**:
-- `sdk/src/index.ts:6-19` - Exports
+- `sdk/src/index.ts` - Exports
 - `sdk/src/useActivityHubContext.ts` - Context hook implementation
-- `backend/main.go:153` - Context endpoint registration
+- `backend/main.go` - Context endpoint registration
 
 ---
 
@@ -125,16 +121,14 @@ if (roles.isAdmin) {
 ### Single CSS Enforcement
 
 - **Source**: `frontend/src/styles/activity-hub.css` (1,538 lines)
-- **Served at**: `http://hostname:3001/shared/activity-hub.css`
-- **Auto-loaded**: SDK injects `<link>` tag on import
+- **Used by**: Activity Hub platform and all mini-apps
 - **Git hook**: Enforces no inline styles, no component CSS files
 
-### How Mini-Apps Get Styling
+### How to Use Shared CSS
 
-1. Mini-app imports SDK: `import { useActivityHubContext } from '@activity-hub/sdk'`
-2. SDK's `loadSharedCSS.ts` runs automatically
-3. Injects stylesheet link to Activity Hub's CSS endpoint
-4. All `.ah-*` classes become available
+1. Import SDK in mini-app: `import { useActivityHubContext } from '@activity-hub/sdk'`
+2. All `.ah-*` classes are immediately available
+3. Reference: `frontend/docs/CSS_GUIDE.md` for complete class list
 
 ### Class Naming Convention
 
@@ -171,10 +165,8 @@ All classes prefixed with `.ah-*`:
 - ✅ Only allows CSS import in `index.tsx`
 
 **Files**:
-- `frontend/src/styles/activity-hub.css` - Single source
-- `sdk/src/styles/loadSharedCSS.ts:15-16` - Auto-injection
-- `backend/main.go:88` - CSS endpoint
-- `.githooks/pre-commit` - Enforcement
+- `frontend/src/styles/activity-hub.css` - Single CSS source
+- `.githooks/pre-commit` - Enforcement hook
 
 ---
 
@@ -226,7 +218,7 @@ window.parent.postMessage({ type: 'CLOSE_APP' }, '*');
 Platform listens and navigates back to lobby:
 
 ```tsx
-// AppContainer.tsx:45-57
+// AppContainer.tsx
 window.addEventListener('message', (event) => {
   if (event.data?.type === 'CLOSE_APP') {
     navigate('/lobby');
@@ -245,8 +237,7 @@ iframe sandbox attribute: `allow-same-origin allow-scripts allow-forms allow-pop
 
 **Files**:
 - `frontend/src/components/AppContainer.tsx` - iframe container
-- `frontend/src/hooks/useApps.ts:58-121` - Launch + URL building
-- `AppContainer.tsx:45-57` - postMessage listener
+- `frontend/src/hooks/useApps.ts` - App launch + URL building
 
 ---
 
@@ -261,7 +252,7 @@ iframe sandbox attribute: `allow-same-origin allow-scripts allow-forms allow-pop
 
 ### Socket Lifecycle
 
-**Startup** (`launcher.go:73-182`):
+**Startup** (`launcher.go`):
 1. Check if app already running → return if yes
 2. Load app definition from database registry
 3. Build socket path: `/tmp/activity-hub-{appId}.sock`
@@ -278,13 +269,13 @@ iframe sandbox attribute: `allow-same-origin allow-scripts allow-forms allow-pop
 6. Wait for socket file to appear (10s timeout)
 7. Mark as "running"
 
-**Health Monitoring** (`launcher.go:308-369`):
+**Health Monitoring** (`launcher.go`):
 - Every 30 seconds: `GET http://unix/api/health`
 - 3 failures → mark as crashed
 - Auto-restart (max 3 attempts)
 - After 3 restarts → give up, kill process
 
-**Idle Shutdown** (`launcher.go:286-306`):
+**Idle Shutdown** (`launcher.go`):
 - Track last activity timestamp on each proxy request
 - Every 5 minutes: check idle duration
 - If idle > 10 minutes → graceful shutdown (SIGTERM)
@@ -298,7 +289,7 @@ iframe sandbox attribute: `allow-same-origin allow-scripts allow-forms allow-pop
 GET /api/apps/tic-tac-toe/proxy/api/game/status?gameId=abc123&token=xxx
 ```
 
-**Backend proxy handler** (`launcher_handlers.go:41-170`):
+**Backend proxy handler** (`launcher_handlers.go`):
 1. Extract `appId` from URL path → `tic-tac-toe`
 2. Get socket path (launches if needed) → `/tmp/activity-hub-tic-tac-toe.sock`
 3. Create HTTP client with Unix socket transport:
@@ -410,7 +401,7 @@ CREATE TABLE applications (
 
 ### Loading Apps
 
-**On Backend Startup** (`apps.go:40-100`):
+**On Backend Startup** (`apps.go`):
 ```go
 func LoadAppRegistry() error {
   rows, _ := db.Query(`
@@ -427,7 +418,7 @@ func LoadAppRegistry() error {
 
 ### Filtering by User Roles
 
-**GET /api/apps endpoint** (`main.go:389-424`):
+**GET /api/apps endpoint** (`main.go`):
 1. Extract user from Authorization header (optional)
 2. Get user's roles from JWT
 3. Filter apps where:
@@ -484,8 +475,8 @@ func userHasAccess(userRoles []string, requiredRoles []string) bool {
 
 **Files**:
 - `backend/apps.go` - Registry loading
-- `backend/main.go:389-424` - GET /api/apps endpoint
-- `database/migrations/003_create_applications.sql` - Table schema
+- `backend/main.go` - GET /api/apps endpoint
+- `database/init.sql` - Table schema (applications table)
 
 ---
 
@@ -516,7 +507,7 @@ const sseToken = await requestSSEToken('tic-tac-toe', gameId);
 // sseToken expires in 5 minutes
 ```
 
-**Backend generates SSE token** (`main.go:325-379`):
+**Backend generates SSE token** (`main.go`):
 ```
 POST /api/sse-token
 Authorization: Bearer {long-lived-jwt}
@@ -587,7 +578,7 @@ es.onmessage = (event) => {
 
 **Files**:
 - `sdk/src/sseToken.ts` - Client-side helpers
-- `backend/main.go:325-379` - SSE token generation endpoint
+- `backend/main.go` - SSE token generation endpoint
 - `github.com/achgithub/activity-hub-auth` - JWT signing/validation
 
 ---
@@ -709,10 +700,7 @@ backend/
 ### Database
 ```
 database/
-└── migrations/
-    ├── 003_create_applications.sql    # App registry
-    ├── 005_create_roles.sql           # Role system
-    └── 006_create_user_roles.sql      # User ↔ Role mapping
+└── init.sql                       # Complete schema (applications, roles, user_roles)
 ```
 
 ---
