@@ -87,6 +87,7 @@ export function buildProxyUrl(
 
   // Add query params
   const searchParams = new URLSearchParams();
+  searchParams.set('appId', appId); // Required for SDK role checking
   if (params.userId) searchParams.set('userId', params.userId);
   if (params.userName) searchParams.set('userName', params.userName);
   if (params.isAdmin !== undefined) searchParams.set('isAdmin', params.isAdmin.toString());
