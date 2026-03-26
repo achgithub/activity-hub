@@ -667,8 +667,7 @@ frontend/
 │   └── styles/
 │       └── activity-hub.css       # Single CSS source (1,538 lines)
 └── docs/
-    ├── CSS_GUIDE.md               # Complete class reference
-    └── CSS_AUDIT.md               # Design decisions
+    └── CSS_GUIDE.md               # Complete class reference
 ```
 
 ### SDK

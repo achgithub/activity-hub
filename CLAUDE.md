@@ -107,7 +107,6 @@ export function GameBoard() {
 
 ### Step 3: Reference Documentation
 - **frontend/docs/CSS_GUIDE.md** - Complete class reference with examples
-- **frontend/docs/CSS_AUDIT.md** - Design decisions and patterns
 - **frontend/src/styles/activity-hub.css** - Source code with comments
 
 ---
@@ -384,8 +383,7 @@ activity-hub/
 │   │   │   └── activity-hub.css    ← SINGLE shared CSS file
 │   │   └── types/
 │   ├── docs/
-│   │   ├── CSS_GUIDE.md            ← 180+ class reference
-│   │   └── CSS_AUDIT.md            ← Design decisions
+│   │   └── CSS_GUIDE.md            ← 180+ class reference
 │   └── package.json
 ├── sdk/                             Publishable npm package
 │   ├── src/
@@ -419,8 +417,7 @@ activity-hub/
 
 ### CSS & Styling
 1. **frontend/docs/CSS_GUIDE.md** - 180+ class reference with examples
-2. **frontend/docs/CSS_AUDIT.md** - Design decisions and color palette
-3. **frontend/src/styles/activity-hub.css** - Source CSS with inline comments
+2. **frontend/src/styles/activity-hub.css** - Source CSS with inline comments
 
 ### Architecture & Integration
 4. **ARCHITECTURE.md** - System design patterns (SSO, SDK, awareness)
@@ -448,7 +445,6 @@ activity-hub/
 
 ### CSS & Styling
 - **frontend/docs/CSS_GUIDE.md** - 180+ class reference with examples
-- **frontend/docs/CSS_AUDIT.md** - Design decisions and patterns
 - Check existing components in `frontend/src/components/`
 
 ### Roles & SDK Integration
