@@ -106,8 +106,7 @@ if (roles.isAdmin) {
   ```
 
 **Role Naming Convention**: `appid:rolename` (e.g., `lms-manager:setup`, `tictactoe:player`)
-- See **ROLE_SETUP_GUIDE.md** for all role definitions
-- See **docs/AUTHENTICATION.md** for auth patterns
+- See **DATABASE_SUMMARY.md** for role definitions
 
 **Files**:
 - `sdk/src/index.ts` - Exports

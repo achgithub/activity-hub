@@ -362,7 +362,6 @@ All mini-apps use Activity Hub SDK for authentication and role-based access.
 
 ### Reference
 - **DATABASE_SUMMARY.md** - Role definitions and database schema for all mini-apps
-- **docs/AUTHENTICATION.md** - Auth patterns and SDK usage
 - **sdk/README.md** - `useActivityHubContext()` hook documentation
 
 ---
@@ -405,7 +404,6 @@ activity-hub/
 │   ├── ARCHITECTURE.md              ← System design patterns
 │   ├── MINI_APP_INTEGRATION.md     ← How to build apps
 │   ├── MINIAPP_GUIDE.md            ← Standards & tech stack
-│   ├── AUTHENTICATION.md            ← Auth patterns
 │   └── TESTING_AND_DEPLOYMENT.md   ← Deployment procedures
 ├── .githooks/
 │   └── pre-commit                  ← CSS enforcement
@@ -433,8 +431,7 @@ activity-hub/
 
 ### Development
 8. **docs/MINIAPP_GUIDE.md** - Technology stack and standards
-9. **docs/AUTHENTICATION.md** - Auth patterns and token handling
-10. **docs/TESTING_AND_DEPLOYMENT.md** - Build and test procedures
+9. **docs/TESTING_AND_DEPLOYMENT.md** - Build and test procedures
 
 ---
 
@@ -456,9 +453,8 @@ activity-hub/
 - **frontend/docs/CSS_AUDIT.md** - Design decisions and patterns
 - Check existing components in `frontend/src/components/`
 
-### Roles & Authentication
-- **ROLE_SETUP_GUIDE.md** - Role definitions for all apps
-- **docs/AUTHENTICATION.md** - Auth patterns and SDK usage
+### Roles & SDK Integration
+- **DATABASE_SUMMARY.md** - Role definitions for all mini-apps
 - **docs/MINI_APP_INTEGRATION.md** - How to integrate SDK in new apps
 
 ### Architecture & Deployment

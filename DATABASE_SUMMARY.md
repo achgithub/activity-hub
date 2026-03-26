@@ -403,7 +403,6 @@ All databases owned by `activityhub` user (PostgreSQL 17.9).
 | database/REDIS_SETUP.md | Redis configuration and key patterns |
 | docs/AWARENESS_SERVICE.md | Presence and session tracking |
 | docs/MINI_APP_INTEGRATION.md | How to add mini-apps |
-| docs/AUTHENTICATION.md | Auth patterns and SDK usage |
 
 **External:**
 | File | Purpose |
